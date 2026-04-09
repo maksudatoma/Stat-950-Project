@@ -23,7 +23,7 @@ set.seed(123)
 # ============================================================
 
 # ----------------------------
-# FAST DEVELOPMENT SETTINGS
+# FAST DEVELOPMENT SETTINGS (test run)
 # ----------------------------
 times <- seq(0, 60, by = 2)         # fewer time points for speed
 tau_candidates <- seq(10, 50, by = 2)  # coarser tau grid
@@ -31,11 +31,11 @@ nsim <- 10                          # small for testing
 B_boot <- 20                        # small for testing
 n_cores <- max(1, detectCores() - 1)
 
-# For final run
-times <- 0:60
-tau_candidates <- 8:52
-nsim <- 50
-B_boot <- 50
+# For final run we need to use these
+# times <- 0:60
+# tau_candidates <- 8:52
+# nsim <- 50
+# B_boot <- 50
 
 # ----------------------------
 # TRUE PARAMETERS
