@@ -1,0 +1,776 @@
+---
+title: "Untitled"
+format: pdf
+editor: visual
+---
+
+```{r}
+# ============================================================
+# FASTER CHANGE-POINT SIR MODEL
+# Simulation + estimation + parallel bootstrap + simulation study
+# ============================================================
+
+rm(list = ls())
+
+library(deSolve)
+library(ggplot2)
+library(parallel)
+
+set.seed(123)
+
+# ============================================================
+# 1. USER SETTINGS
+# ============================================================
+
+# ----------------------------
+# FAST DEVELOPMENT SETTINGS
+# ----------------------------
+times <- seq(0, 60, by = 2)         # fewer time points for speed
+tau_candidates <- seq(10, 50, by = 2)  # coarser tau grid
+nsim <- 10                          # small for testing
+B_boot <- 20                        # small for testing
+n_cores <- max(1, detectCores() - 1)
+
+# For final run
+times <- 0:60
+tau_candidates <- 8:52
+nsim <- 50
+B_boot <- 50
+
+# ----------------------------
+# TRUE PARAMETERS
+# ----------------------------
+N_true     <- 1000
+I0_true    <- 10
+R0_true    <- 0
+S0_true    <- N_true - I0_true - R0_true
+
+beta1_true <- 0.45
+beta2_true <- 0.18
+gamma_true <- 0.12
+tau_true   <- 25
+sigma_true <- 8
+
+# ============================================================
+# 2. CHANGE-POINT SIR MODEL
+# ============================================================
+
+sir_cp_ode <- function(time, state, parameters) {
+  S <- state[1]
+  I <- state[2]
+  R <- state[3]
+  
+  beta1 <- parameters["beta1"]
+  beta2 <- parameters["beta2"]
+  gamma <- parameters["gamma"]
+  tau   <- parameters["tau"]
+  N     <- parameters["N"]
+  
+  beta_t <- ifelse(time <= tau, beta1, beta2)
+  
+  dS <- -beta_t * S * I / N
+  dI <-  beta_t * S * I / N - gamma * I
+  dR <-  gamma * I
+  
+  list(c(dS, dI, dR))
+}
+
+solve_sir_cp <- function(times, S0, I0, R0, beta1, beta2, gamma, tau, N) {
+  state <- c(S = S0, I = I0, R = R0)
+  pars  <- c(beta1 = beta1, beta2 = beta2, gamma = gamma, tau = tau, N = N)
+  
+  out <- ode(
+    y = state,
+    times = times,
+    func = sir_cp_ode,
+    parms = pars,
+    method = "lsoda"
+  )
+  
+  as.data.frame(out)
+}
+
+# ============================================================
+# 3. DATA GENERATION
+# ============================================================
+
+simulate_cp_sir_data <- function(times, S0, I0, R0, beta1, beta2, gamma, tau, N, sigma) {
+  
+  sol <- solve_sir_cp(
+    times = times,
+    S0 = S0,
+    I0 = I0,
+    R0 = R0,
+    beta1 = beta1,
+    beta2 = beta2,
+    gamma = gamma,
+    tau = tau,
+    N = N
+  )
+  
+  y_obs <- sol$I + rnorm(length(times), mean = 0, sd = sigma)
+  y_obs <- pmax(y_obs, 0)
+  
+  data.frame(
+    time = times,
+    I_true = sol$I,
+    I_obs = y_obs
+  )
+}
+
+# ============================================================
+# 4. NEGATIVE LOG-LIKELIHOOD
+# ============================================================
+
+nll_fixed_tau <- function(par_log, tau, times, y, S0, I0, R0, N) {
+  
+  beta1 <- exp(par_log[1])
+  beta2 <- exp(par_log[2])
+  gamma <- exp(par_log[3])
+  sigma <- exp(par_log[4])
+  
+  sol <- try(
+    solve_sir_cp(
+      times = times,
+      S0 = S0,
+      I0 = I0,
+      R0 = R0,
+      beta1 = beta1,
+      beta2 = beta2,
+      gamma = gamma,
+      tau = tau,
+      N = N
+    ),
+    silent = TRUE
+  )
+  
+  if (inherits(sol, "try-error")) return(1e12)
+  
+  mu <- sol$I
+  
+  nll <- -sum(dnorm(y, mean = mu, sd = sigma, log = TRUE))
+  
+  if (!is.finite(nll)) nll <- 1e12
+  return(nll)
+}
+
+# ============================================================
+# 5. FIT CHANGE-POINT SIR MODEL
+#    Speed improvements:
+#    - coarser tau grid
+#    - warm starts
+#    - lower maxit
+# ============================================================
+
+fit_cp_sir_fast <- function(times, y, S0, I0, R0, N,
+                            tau_candidates = seq(10, 50, by = 2),
+                            init = c(beta1 = 0.25, beta2 = 0.15, gamma = 0.10, sigma = 8),
+                            maxit = 80) {
+  
+  results <- data.frame(
+    tau = tau_candidates,
+    nll = NA_real_,
+    beta1 = NA_real_,
+    beta2 = NA_real_,
+    gamma = NA_real_,
+    sigma = NA_real_
+  )
+  
+  current_init <- init
+  
+  for (k in seq_along(tau_candidates)) {
+    tau_k <- tau_candidates[k]
+    
+    opt <- try(
+      optim(
+        par = log(current_init),
+        fn  = nll_fixed_tau,
+        tau = tau_k,
+        times = times,
+        y = y,
+        S0 = S0,
+        I0 = I0,
+        R0 = R0,
+        N = N,
+        method = "L-BFGS-B",
+        lower = log(c(1e-4, 1e-4, 1e-4, 1e-3)),
+        upper = log(c(5, 5, 5, 100)),
+        control = list(maxit = maxit)
+      ),
+      silent = TRUE
+    )
+    
+    if (!inherits(opt, "try-error")) {
+      est <- exp(opt$par)
+      
+      results$nll[k]   <- opt$value
+      results$beta1[k] <- est[1]
+      results$beta2[k] <- est[2]
+      results$gamma[k] <- est[3]
+      results$sigma[k] <- est[4]
+      
+      # warm start for next tau
+      current_init <- est
+    }
+  }
+  
+  valid <- which(is.finite(results$nll))
+  if (length(valid) == 0) return(NULL)
+  
+  best_idx <- which.min(results$nll)
+  best_row <- results[best_idx, ]
+  
+  fitted_sol <- solve_sir_cp(
+    times = times,
+    S0 = S0,
+    I0 = I0,
+    R0 = R0,
+    beta1 = best_row$beta1,
+    beta2 = best_row$beta2,
+    gamma = best_row$gamma,
+    tau = best_row$tau,
+    N = N
+  )
+  
+  list(
+    estimates = best_row,
+    grid_results = results,
+    fitted_solution = fitted_sol
+  )
+}
+
+# ============================================================
+# 6. BOOTSTRAP CI
+#    Parallelized bootstrap
+# ============================================================
+
+boot_ci <- function(x, level = 0.95) {
+  alpha <- 1 - level
+  quantile(x, probs = c(alpha / 2, 1 - alpha / 2), na.rm = TRUE)
+}
+
+bootstrap_cp_sir_parallel <- function(B, fit_obj, times, S0, I0, R0, N,
+                                      tau_candidates = seq(10, 50, by = 2),
+                                      n_cores = 2) {
+  
+  est <- fit_obj$estimates
+  
+  beta1_hat <- est$beta1
+  beta2_hat <- est$beta2
+  gamma_hat <- est$gamma
+  tau_hat   <- est$tau
+  sigma_hat <- est$sigma
+  
+  fitted_sol <- solve_sir_cp(
+    times = times,
+    S0 = S0,
+    I0 = I0,
+    R0 = R0,
+    beta1 = beta1_hat,
+    beta2 = beta2_hat,
+    gamma = gamma_hat,
+    tau = tau_hat,
+    N = N
+  )
+  
+  mu_hat <- fitted_sol$I
+  
+  cl <- makeCluster(n_cores)
+  on.exit(stopCluster(cl), add = TRUE)
+  
+  clusterExport(
+    cl,
+    varlist = c(
+      "fit_cp_sir_fast", "solve_sir_cp", "sir_cp_ode", "nll_fixed_tau",
+      "times", "S0", "I0", "R0", "N", "tau_candidates",
+      "beta1_hat", "beta2_hat", "gamma_hat", "sigma_hat", "mu_hat"
+    ),
+    envir = environment()
+  )
+  
+  clusterEvalQ(cl, {
+    library(deSolve)
+    NULL
+  })
+  
+  boot_list <- parLapply(cl, 1:B, function(b) {
+    y_boot <- mu_hat + rnorm(length(mu_hat), mean = 0, sd = sigma_hat)
+    y_boot <- pmax(y_boot, 0)
+    
+    fit_b <- try(
+      fit_cp_sir_fast(
+        times = times,
+        y = y_boot,
+        S0 = S0,
+        I0 = I0,
+        R0 = R0,
+        N = N,
+        tau_candidates = tau_candidates,
+        init = c(beta1_hat, beta2_hat, gamma_hat, sigma_hat),
+        maxit = 60
+      ),
+      silent = TRUE
+    )
+    
+    if (!inherits(fit_b, "try-error") && !is.null(fit_b)) {
+      c(
+        fit_b$estimates$beta1,
+        fit_b$estimates$beta2,
+        fit_b$estimates$gamma,
+        fit_b$estimates$tau,
+        fit_b$estimates$sigma
+      )
+    } else {
+      rep(NA_real_, 5)
+    }
+  })
+  
+  boot_est <- as.data.frame(do.call(rbind, boot_list))
+  colnames(boot_est) <- c("beta1", "beta2", "gamma", "tau", "sigma")
+  boot_est
+}
+
+# ============================================================
+# 7. ONE SIMULATION RUN
+# ============================================================
+
+run_one_simulation_fast <- function(sim_id,
+                                    times,
+                                    S0, I0, R0, N,
+                                    beta1_true, beta2_true, gamma_true, tau_true, sigma_true,
+                                    tau_candidates,
+                                    B_boot = 20,
+                                    n_cores = 2) {
+  
+  dat <- simulate_cp_sir_data(
+    times = times,
+    S0 = S0,
+    I0 = I0,
+    R0 = R0,
+    beta1 = beta1_true,
+    beta2 = beta2_true,
+    gamma = gamma_true,
+    tau = tau_true,
+    N = N,
+    sigma = sigma_true
+  )
+  
+  fit <- try(
+    fit_cp_sir_fast(
+      times = times,
+      y = dat$I_obs,
+      S0 = S0,
+      I0 = I0,
+      R0 = R0,
+      N = N,
+      tau_candidates = tau_candidates,
+      init = c(0.25, 0.15, 0.10, 8),
+      maxit = 80
+    ),
+    silent = TRUE
+  )
+  
+  if (inherits(fit, "try-error") || is.null(fit)) return(NULL)
+  
+  est <- fit$estimates
+  
+  boot_res <- try(
+    bootstrap_cp_sir_parallel(
+      B = B_boot,
+      fit_obj = fit,
+      times = times,
+      S0 = S0,
+      I0 = I0,
+      R0 = R0,
+      N = N,
+      tau_candidates = tau_candidates,
+      n_cores = n_cores
+    ),
+    silent = TRUE
+  )
+  
+  if (inherits(boot_res, "try-error")) return(NULL)
+  
+  ci_beta1 <- boot_ci(boot_res$beta1)
+  ci_beta2 <- boot_ci(boot_res$beta2)
+  ci_gamma <- boot_ci(boot_res$gamma)
+  ci_tau   <- boot_ci(boot_res$tau)
+  ci_sigma <- boot_ci(boot_res$sigma)
+  
+  data.frame(
+    sim = sim_id,
+    
+    beta1_true = beta1_true,
+    beta2_true = beta2_true,
+    gamma_true = gamma_true,
+    tau_true   = tau_true,
+    sigma_true = sigma_true,
+    
+    beta1_hat = est$beta1,
+    beta2_hat = est$beta2,
+    gamma_hat = est$gamma,
+    tau_hat   = est$tau,
+    sigma_hat = est$sigma,
+    
+    beta1_lwr = ci_beta1[1],
+    beta1_upr = ci_beta1[2],
+    beta2_lwr = ci_beta2[1],
+    beta2_upr = ci_beta2[2],
+    gamma_lwr = ci_gamma[1],
+    gamma_upr = ci_gamma[2],
+    tau_lwr   = ci_tau[1],
+    tau_upr   = ci_tau[2],
+    sigma_lwr = ci_sigma[1],
+    sigma_upr = ci_sigma[2]
+  )
+}
+
+# ============================================================
+# 8. REPEATED SIMULATION STUDY
+# ============================================================
+
+run_simulation_study_fast <- function(nsim = 10,
+                                      B_boot = 20,
+                                      times = seq(0, 60, by = 2),
+                                      N = 1000,
+                                      I0 = 10,
+                                      R0 = 0,
+                                      beta1_true = 0.45,
+                                      beta2_true = 0.18,
+                                      gamma_true = 0.12,
+                                      tau_true = 25,
+                                      sigma_true = 8,
+                                      tau_candidates = seq(10, 50, by = 2),
+                                      n_cores = 2) {
+  
+  S0 <- N - I0 - R0
+  all_res <- vector("list", nsim)
+  
+  for (s in 1:nsim) {
+    cat("Simulation", s, "of", nsim, "\n")
+    
+    one_res <- run_one_simulation_fast(
+      sim_id = s,
+      times = times,
+      S0 = S0,
+      I0 = I0,
+      R0 = R0,
+      N = N,
+      beta1_true = beta1_true,
+      beta2_true = beta2_true,
+      gamma_true = gamma_true,
+      tau_true = tau_true,
+      sigma_true = sigma_true,
+      tau_candidates = tau_candidates,
+      B_boot = B_boot,
+      n_cores = n_cores
+    )
+    
+    all_res[[s]] <- one_res
+  }
+  
+  do.call(rbind, all_res)
+}
+
+# ============================================================
+# 9. PERFORMANCE SUMMARY
+# ============================================================
+
+performance_summary <- function(results) {
+  
+  results <- na.omit(results)
+  
+  data.frame(
+    Parameter = c("beta1", "beta2", "gamma", "tau", "sigma"),
+    
+    True = c(
+      unique(results$beta1_true),
+      unique(results$beta2_true),
+      unique(results$gamma_true),
+      unique(results$tau_true),
+      unique(results$sigma_true)
+    ),
+    
+    Mean_Estimate = c(
+      mean(results$beta1_hat),
+      mean(results$beta2_hat),
+      mean(results$gamma_hat),
+      mean(results$tau_hat),
+      mean(results$sigma_hat)
+    ),
+    
+    Bias = c(
+      mean(results$beta1_hat - results$beta1_true),
+      mean(results$beta2_hat - results$beta2_true),
+      mean(results$gamma_hat - results$gamma_true),
+      mean(results$tau_hat   - results$tau_true),
+      mean(results$sigma_hat - results$sigma_true)
+    ),
+    
+    RMSE = c(
+      sqrt(mean((results$beta1_hat - results$beta1_true)^2)),
+      sqrt(mean((results$beta2_hat - results$beta2_true)^2)),
+      sqrt(mean((results$gamma_hat - results$gamma_true)^2)),
+      sqrt(mean((results$tau_hat   - results$tau_true)^2)),
+      sqrt(mean((results$sigma_hat - results$sigma_true)^2))
+    ),
+    
+    Coverage_95 = c(
+      mean(results$beta1_lwr <= results$beta1_true & results$beta1_true <= results$beta1_upr),
+      mean(results$beta2_lwr <= results$beta2_true & results$beta2_true <= results$beta2_upr),
+      mean(results$gamma_lwr <= results$gamma_true & results$gamma_true <= results$gamma_upr),
+      mean(results$tau_lwr   <= results$tau_true   & results$tau_true   <= results$tau_upr),
+      mean(results$sigma_lwr <= results$sigma_true & results$sigma_true <= results$sigma_upr)
+    ),
+    
+    Avg_CI_Width = c(
+      mean(results$beta1_upr - results$beta1_lwr),
+      mean(results$beta2_upr - results$beta2_lwr),
+      mean(results$gamma_upr - results$gamma_lwr),
+      mean(results$tau_upr   - results$tau_lwr),
+      mean(results$sigma_upr - results$sigma_lwr)
+    )
+  )
+}
+
+# ============================================================
+# 10. CHANGE-POINT RECOVERY
+# ============================================================
+
+tau_recovery_summary <- function(results) {
+  data.frame(
+    Exact_Match    = mean(results$tau_hat == results$tau_true, na.rm = TRUE),
+    Within_1       = mean(abs(results$tau_hat - results$tau_true) <= 1, na.rm = TRUE),
+    Within_2       = mean(abs(results$tau_hat - results$tau_true) <= 2, na.rm = TRUE),
+    Within_3       = mean(abs(results$tau_hat - results$tau_true) <= 3, na.rm = TRUE),
+    Mean_Abs_Error = mean(abs(results$tau_hat - results$tau_true), na.rm = TRUE)
+  )
+}
+
+# ============================================================
+# 11. RUN ONE DATASET EXAMPLE
+# ============================================================
+
+dat_example <- simulate_cp_sir_data(
+  times = times,
+  S0 = S0_true,
+  I0 = I0_true,
+  R0 = R0_true,
+  beta1 = beta1_true,
+  beta2 = beta2_true,
+  gamma = gamma_true,
+  tau = tau_true,
+  N = N_true,
+  sigma = sigma_true
+)
+
+fit_example <- fit_cp_sir_fast(
+  times = times,
+  y = dat_example$I_obs,
+  S0 = S0_true,
+  I0 = I0_true,
+  R0 = R0_true,
+  N = N_true,
+  tau_candidates = tau_candidates
+)
+
+print(fit_example$estimates)
+
+# Plot
+plot_df <- data.frame(
+  time = times,
+  observed = dat_example$I_obs,
+  true_I = dat_example$I_true,
+  fitted_I = fit_example$fitted_solution$I
+)
+
+p1 <- ggplot(plot_df, aes(x = time)) +
+  geom_point(aes(y = observed), size = 2, alpha = 0.7) +
+  geom_line(aes(y = true_I), linewidth = 1, linetype = "dashed") +
+  geom_line(aes(y = fitted_I), linewidth = 1.1) +
+  geom_vline(xintercept = tau_true, linetype = "dashed") +
+  geom_vline(xintercept = fit_example$estimates$tau, linetype = "dotted") +
+  labs(
+    title = "Change-point SIR fit",
+    subtitle = "Dashed = true trajectory / true tau, dotted = estimated tau",
+    y = "Infected"
+  ) +
+  theme_minimal(base_size = 14)
+
+print(p1)
+
+# ============================================================
+# 12. RUN FAST SIMULATION STUDY
+# ============================================================
+
+results <- run_simulation_study_fast(
+  nsim = nsim,
+  B_boot = B_boot,
+  times = times,
+  N = N_true,
+  I0 = I0_true,
+  R0 = R0_true,
+  beta1_true = beta1_true,
+  beta2_true = beta2_true,
+  gamma_true = gamma_true,
+  tau_true = tau_true,
+  sigma_true = sigma_true,
+  tau_candidates = tau_candidates,
+  n_cores = n_cores
+)
+
+print(results)
+
+summary_table <- performance_summary(results)
+print(summary_table)
+
+tau_recovery <- tau_recovery_summary(results)
+print(tau_recovery)
+
+# ============================================================
+# 13. SAVE RESULTS
+# ============================================================
+
+# write.csv(results, "sir_cp_fast_simulation_results.csv", row.names = FALSE)
+# write.csv(summary_table, "sir_cp_fast_summary_table.csv", row.names = FALSE)
+# write.csv(tau_recovery, "sir_cp_fast_tau_recovery.csv", row.names = FALSE)
+
+
+# ============================================================
+# IMPORTANT PLOTS FOR CHANGE-POINT SIR RESULTS
+# Assumes these already exist:
+# results, fit_example, dat_example, times, tau_true
+# ============================================================
+
+library(ggplot2)
+
+theme_set(theme_minimal(base_size = 14))
+
+# ------------------------------------------------------------
+# 1. Observed vs fitted infected trajectory
+# ------------------------------------------------------------
+plot_df <- data.frame(
+  time = times,
+  observed = dat_example$I_obs,
+  true_I = dat_example$I_true,
+  fitted_I = fit_example$fitted_solution$I
+)
+
+p_fit <- ggplot(plot_df, aes(x = time)) +
+  geom_point(aes(y = observed), size = 2, alpha = 0.7) +
+  geom_line(aes(y = true_I), linewidth = 1, linetype = "dashed") +
+  geom_line(aes(y = fitted_I), linewidth = 1.2) +
+  geom_vline(xintercept = tau_true, linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = fit_example$estimates$tau, linetype = "dotted", linewidth = 1) +
+  labs(
+    title = "Observed and fitted infected trajectory",
+    subtitle = "Dashed = true trajectory / true change-point, dotted = estimated change-point",
+    x = "Time",
+    y = "Number infected"
+  )
+
+print(p_fit)
+
+# ------------------------------------------------------------
+# 2. Profile negative log-likelihood over tau
+# ------------------------------------------------------------
+p_profile <- ggplot(fit_example$grid_results, aes(x = tau, y = nll)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  geom_vline(xintercept = tau_true, linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = fit_example$estimates$tau, linetype = "dotted", linewidth = 1) +
+  labs(
+    title = "Profile negative log-likelihood over the change-point",
+    subtitle = "Dashed = true change-point, dotted = estimated change-point",
+    x = expression(tau),
+    y = "Negative log-likelihood"
+  )
+
+print(p_profile)
+
+# ------------------------------------------------------------
+# 3. Distribution of estimated change-points across simulations
+# ------------------------------------------------------------
+tau_counts <- as.data.frame(table(results$tau_hat))
+colnames(tau_counts) <- c("tau_hat", "freq")
+tau_counts$tau_hat <- as.numeric(as.character(tau_counts$tau_hat))
+
+p_tau <- ggplot(tau_counts, aes(x = tau_hat, y = freq)) +
+  geom_col(fill = "orchid3") +
+  geom_vline(xintercept = unique(results$tau_true)[1], linetype = "dashed", linewidth = 1) +
+  labs(
+    title = "Distribution of estimated change-points",
+    subtitle = "Dashed line = true change-point",
+    x = expression(hat(tau)),
+    y = "Frequency"
+  )
+
+print(p_tau)
+
+# ------------------------------------------------------------
+# 4. Boxplot of estimation errors
+# ------------------------------------------------------------
+err_df <- data.frame(
+  beta1 = results$beta1_hat - results$beta1_true,
+  beta2 = results$beta2_hat - results$beta2_true,
+  gamma = results$gamma_hat - results$gamma_true,
+  tau   = results$tau_hat   - results$tau_true,
+  sigma = results$sigma_hat - results$sigma_true
+)
+
+err_long <- stack(err_df)
+colnames(err_long) <- c("error", "parameter")
+
+p_err <- ggplot(err_long, aes(x = parameter, y = error)) +
+  geom_boxplot(fill = "lightgray") +
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = 1) +
+  labs(
+    title = "Estimation errors across simulations",
+    x = "Parameter",
+    y = "Estimate - True value"
+  )
+
+print(p_err)
+
+# ------------------------------------------------------------
+# 5. Empirical 95% CI coverage
+# ------------------------------------------------------------
+coverage_df <- data.frame(
+  parameter = c("beta1", "beta2", "gamma", "tau", "sigma"),
+  coverage = c(
+    mean(results$beta1_lwr <= results$beta1_true & results$beta1_true <= results$beta1_upr, na.rm = TRUE),
+    mean(results$beta2_lwr <= results$beta2_true & results$beta2_true <= results$beta2_upr, na.rm = TRUE),
+    mean(results$gamma_lwr <= results$gamma_true & results$gamma_true <= results$gamma_upr, na.rm = TRUE),
+    mean(results$tau_lwr   <= results$tau_true   & results$tau_true   <= results$tau_upr, na.rm = TRUE),
+    mean(results$sigma_lwr <= results$sigma_true & results$sigma_true <= results$sigma_upr, na.rm = TRUE)
+  )
+)
+
+p_cov <- ggplot(coverage_df, aes(x = parameter, y = coverage)) +
+  geom_col(fill = "steelblue") +
+  geom_hline(yintercept = 0.95, linetype = "dashed", linewidth = 1) +
+  ylim(0, 1) +
+  labs(
+    title = "Empirical 95% bootstrap CI coverage",
+    subtitle = "Dashed line = nominal 95% level",
+    x = "Parameter",
+    y = "Coverage probability"
+  )
+
+print(p_cov)
+
+# ------------------------------------------------------------
+# Optional: save all important plots
+# ------------------------------------------------------------
+# ggsave("sir_fit_plot.png", p_fit, width = 7, height = 5, dpi = 300)
+# ggsave("sir_profile_plot.png", p_profile, width = 7, height = 5, dpi = 300)
+# ggsave("sir_tau_distribution.png", p_tau, width = 7, height = 5, dpi = 300)
+# ggsave("sir_error_boxplot.png", p_err, width = 7, height = 5, dpi = 300)
+# ggsave("sir_coverage_plot.png", p_cov, width = 7, height = 5, dpi = 300)
+
+
+
+```
+
+```{}
+```
