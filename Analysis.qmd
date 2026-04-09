@@ -482,8 +482,6 @@ boxplot(boot_valid$r1_hat, boot_valid$r2_hat,
 # saveRDS(boot_results, "bootstrap_results_logistic_cp.rds")
 ```
 
-
-
 ```{r}
 # =========================================================
 # SECTION: BAYESIAN INFERENCE VIA METROPOLIS-WITHIN-GIBBS
@@ -635,7 +633,6 @@ run_mcmc <- function(y, t, init, n_iter = 12000,
   list(chain = chain, accept_rate = accept_count / n_iter)
 }
 ```
-
 
 ```{r}
 # ---------------------------------------------------------
