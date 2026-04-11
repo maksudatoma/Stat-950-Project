@@ -1,0 +1,330 @@
+---
+title: "SIR_test without parallel"
+format: html
+editor: visual
+---
+
+```{r}
+rm(list = ls())
+
+library(deSolve)
+
+set.seed(123)
+
+# =========================================================
+# 1. SETTINGS
+# =========================================================
+times <- seq(0, 60, by = 1)
+
+tau_true   <- 20
+beta1_true <- 0.4
+beta2_true <- 0.15
+gamma_true <- 0.1
+sigma_true <- 0.01
+
+candidate_tau <- seq(5, 50, by = 1)
+
+state_init <- c(S = 0.999, I = 0.001, R = 0)
+
+nsim <- 2  # Need to increase 
+
+# =========================================================
+# 2. SIR MODEL
+# =========================================================
+sir_cp <- function(t, state, par) {
+  
+  S <- state[1]; I <- state[2]; R <- state[3]
+  
+  beta <- if (t <= par["tau"]) par["beta1"] else par["beta2"]
+  
+  N <- S + I + R
+  
+  dS <- -beta * S * I / N
+  dI <- beta * S * I / N - par["gamma"] * I
+  dR <- par["gamma"] * I
+  
+  list(c(dS, dI, dR))
+}
+
+# =========================================================
+# 3. SAFE SOLVER
+# =========================================================
+safe_solve <- function(par) {
+  
+  out <- try(
+    ode(
+      y = state_init,
+      times = times,
+      func = sir_cp,
+      parms = par,
+      method = "ode45",
+      rtol = 1e-3,
+      atol = 1e-4,
+      maxsteps = 5000
+    ),
+    silent = TRUE
+  )
+  
+  if (inherits(out, "try-error")) return(NULL)
+  
+  out <- as.data.frame(out)
+  
+  if (any(!is.finite(out$I))) return(NULL)
+  
+  out$I <- pmax(pmin(out$I, 1), 0)
+  
+  out
+}
+
+# =========================================================
+# 4. LIKELIHOOD
+# =========================================================
+nll <- function(p, tau_fixed, y_obs) {
+  
+  par <- c(beta1=p[1], beta2=p[2], gamma=p[3], tau=tau_fixed)
+  
+  sim <- safe_solve(par)
+  if (is.null(sim)) return(1e12)
+  
+  mu <- sim$I
+  sigma <- max(p[4], 1e-4)
+  
+  if (any(!is.finite(mu))) return(1e12)
+  
+  -sum(dnorm(y_obs, mu, sigma, log=TRUE))
+}
+
+# =========================================================
+# 5. SIMULATION STORAGE
+# =========================================================
+results <- data.frame(
+  sim = 1:nsim,
+  beta1_hat = NA,
+  beta2_hat = NA,
+  gamma_hat = NA,
+  tau_hat = NA
+)
+
+# =========================================================
+# 6. SIMULATION LOOP
+# =========================================================
+for (s in 1:nsim) {
+  
+  cat("\n============================\n")
+  cat("Simulation", s, "of", nsim, "\n")
+  cat("============================\n")
+  
+  true_par <- c(beta1=beta1_true,
+                beta2=beta2_true,
+                gamma=gamma_true,
+                tau=tau_true)
+  
+  sim_true <- safe_solve(true_par)
+  if (is.null(sim_true)) stop("True simulation failed")
+  
+  y_obs <- sim_true$I + rnorm(length(times), 0, sigma_true)
+  
+  cp_profile <- data.frame(tau=candidate_tau, nll=NA)
+  fits <- vector("list", length(candidate_tau))
+  
+  start <- c(0.3, 0.1, 0.1, 0.01)
+  
+  for (i in seq_along(candidate_tau)) {
+    
+    tau_i <- candidate_tau[i]
+    
+    fit <- try(
+      optim(
+        par = start,
+        fn = nll,
+        tau_fixed = tau_i,
+        y_obs = y_obs,
+        method = "L-BFGS-B",
+        lower = c(1e-3, 1e-3, 1e-3, 1e-4),
+        upper = c(2, 2, 1, 1),
+        control = list(maxit = 50)
+      ),
+      silent = TRUE
+    )
+    
+    if (!inherits(fit, "try-error") && is.finite(fit$value)) {
+      cp_profile$nll[i] <- fit$value
+      fits[[i]] <- fit
+    }
+  }
+  
+  valid <- which(is.finite(cp_profile$nll))
+  
+  if (length(valid) == 0) {
+    cat("All fits failed\n")
+    next
+  }
+  
+  best <- valid[which.min(cp_profile$nll[valid])]
+  best_fit <- fits[[best]]
+  
+  tau_hat <- cp_profile$tau[best]
+  
+  par_hat <- best_fit$par
+  names(par_hat) <- c("beta1","beta2","gamma","sigma")
+  
+  cat("Estimated tau:", tau_hat, "\n")
+  
+  results$beta1_hat[s] <- par_hat["beta1"]
+  results$beta2_hat[s] <- par_hat["beta2"]
+  results$gamma_hat[s] <- par_hat["gamma"]
+  results$tau_hat[s]   <- tau_hat
+  
+  cat("Finished Simulation", s, "\n")
+}
+
+# =========================================================
+# 7. CLEAN RESULTS
+# =========================================================
+res <- results[complete.cases(results), ]
+
+print(res)
+
+# =========================================================
+# 8. SUMMARY TABLE
+# =========================================================
+if (nrow(res) > 0) {
+  
+  summary_table <- data.frame(
+    Parameter = c("beta1","beta2","gamma","tau"),
+    True = c(beta1_true, beta2_true, gamma_true, tau_true),
+    
+    Mean = c(
+      mean(res$beta1_hat),
+      mean(res$beta2_hat),
+      mean(res$gamma_hat),
+      mean(res$tau_hat)
+    ),
+    
+    Bias = c(
+      mean(res$beta1_hat) - beta1_true,
+      mean(res$beta2_hat) - beta2_true,
+      mean(res$gamma_hat) - gamma_true,
+      mean(res$tau_hat) - tau_true
+    ),
+    
+    RMSE = c(
+      sqrt(mean((res$beta1_hat - beta1_true)^2)),
+      sqrt(mean((res$beta2_hat - beta2_true)^2)),
+      sqrt(mean((res$gamma_hat - gamma_true)^2)),
+      sqrt(mean((res$tau_hat - tau_true)^2))
+    )
+  )
+  
+  cat("\n================ FINAL SUMMARY ================\n")
+  print(summary_table)
+  
+  cat("\nTau accuracy (±1):",
+      mean(abs(res$tau_hat - tau_true) <= 1), "\n")
+  
+  hist(res$tau_hat,
+       main = expression("Distribution of " * hat(tau)),
+       xlab = expression(hat(tau)))
+}
+
+# =========================================================
+# 9. PARAMETRIC BOOTSTRAP
+# =========================================================
+
+set.seed(999)
+
+B <- 2 #Need to increase
+
+boot_results <- data.frame(
+  b = 1:B,
+  tau_hat = NA,
+  beta1_hat = NA,
+  beta2_hat = NA,
+  gamma_hat = NA
+)
+
+boot_par <- c(
+  beta1 = mean(res$beta1_hat),
+  beta2 = mean(res$beta2_hat),
+  gamma = mean(res$gamma_hat),
+  tau   = round(mean(res$tau_hat))
+)
+
+cat("\n================ BOOTSTRAP START ================\n")
+print(boot_par)
+
+for (b in 1:B) {
+  
+  cat("Bootstrap", b, "of", B, "\n")
+  
+  sim_b <- safe_solve(boot_par)
+  
+  if (is.null(sim_b)) next
+  
+  y_boot <- sim_b$I + rnorm(length(times), 0, sigma_true)
+  
+  cp_profile <- data.frame(tau=candidate_tau, nll=NA)
+  fits <- vector("list", length(candidate_tau))
+  
+  start <- c(0.3, 0.1, 0.1, 0.01)
+  
+  for (i in seq_along(candidate_tau)) {
+    
+    tau_i <- candidate_tau[i]
+    
+    fit <- try(
+      optim(
+        par = start,
+        fn = nll,
+        tau_fixed = tau_i,
+        y_obs = y_boot,
+        method = "L-BFGS-B",
+        lower = c(1e-3, 1e-3, 1e-3, 1e-4),
+        upper = c(2, 2, 1, 1),
+        control = list(maxit = 40)
+      ),
+      silent = TRUE
+    )
+    
+    if (!inherits(fit, "try-error") && is.finite(fit$value)) {
+      cp_profile$nll[i] <- fit$value
+      fits[[i]] <- fit
+    }
+  }
+  
+  valid <- which(is.finite(cp_profile$nll))
+  
+  if (length(valid) == 0) next
+  
+  best <- valid[which.min(cp_profile$nll[valid])]
+  best_fit <- fits[[best]]
+  
+  tau_hat <- cp_profile$tau[best]
+  
+  par_hat <- best_fit$par
+  names(par_hat) <- c("beta1","beta2","gamma","sigma")
+  
+  boot_results$tau_hat[b]   <- tau_hat
+  boot_results$beta1_hat[b] <- par_hat["beta1"]
+  boot_results$beta2_hat[b] <- par_hat["beta2"]
+  boot_results$gamma_hat[b] <- par_hat["gamma"]
+  
+  cat("Estimated tau:", tau_hat, "\n")
+}
+
+cat("\n================ BOOTSTRAP DONE ================\n")
+
+boot_clean <- boot_results[complete.cases(boot_results), ]
+
+print(boot_clean)
+
+if (nrow(boot_clean) > 0) {
+  
+  cat("\nBootstrap tau accuracy (±1):",
+      mean(abs(boot_clean$tau_hat - boot_par["tau"]) <= 1), "\n")
+  
+  hist(boot_clean$tau_hat,
+       main = "Bootstrap distribution of tau",
+       xlab = "tau")
+}
+```
