@@ -1,0 +1,283 @@
+---
+title: "SIR with Parallel"
+format: html
+editor: visual
+---
+
+```{r}
+rm(list = ls())
+
+library(deSolve)
+library(foreach)
+library(doParallel)
+
+set.seed(123)
+
+# =========================================================
+# 1. SETTINGS
+# =========================================================
+times <- seq(0, 60, by = 1)
+
+tau_true   <- 20
+beta1_true <- 0.4
+beta2_true <- 0.15
+gamma_true <- 0.1
+sigma_true <- 0.01
+
+candidate_tau <- seq(5, 50, by = 1)
+
+state_init <- c(S = 0.999, I = 0.001, R = 0)
+
+nsim <- 2 # Need to increase
+nboot <- 2 # Need to increase
+
+# =========================================================
+# 2. MODEL
+# =========================================================
+sir_cp <- function(t, state, par) {
+  S <- state[1]; I <- state[2]; R <- state[3]
+  beta <- if (t <= par["tau"]) par["beta1"] else par["beta2"]
+  N <- S + I + R
+  
+  dS <- -beta * S * I / N
+  dI <- beta * S * I / N - par["gamma"] * I
+  dR <- par["gamma"] * I
+  
+  list(c(dS, dI, dR))
+}
+
+# =========================================================
+# 3. SAFE SOLVER
+# =========================================================
+safe_solve <- function(par) {
+  out <- try(
+    ode(
+      y = state_init,
+      times = times,
+      func = sir_cp,
+      parms = par,
+      method = "ode45",
+      rtol = 1e-3,
+      atol = 1e-4,
+      maxsteps = 5000
+    ),
+    silent = TRUE
+  )
+  
+  if (inherits(out, "try-error")) return(NULL)
+  
+  out <- as.data.frame(out)
+  if (any(!is.finite(out$I))) return(NULL)
+  
+  out$I <- pmax(pmin(out$I, 1), 0)
+  out
+}
+
+# =========================================================
+# 4. NLL
+# =========================================================
+nll <- function(p, tau_fixed, y_obs) {
+  par <- c(beta1 = p[1], beta2 = p[2], gamma = p[3], tau = tau_fixed)
+  
+  sim <- safe_solve(par)
+  if (is.null(sim)) return(1e12)
+  
+  mu <- sim$I
+  sigma <- max(p[4], 1e-4)
+  
+  -sum(dnorm(y_obs, mu, sigma, log = TRUE))
+}
+
+# =========================================================
+# 5. PARALLEL SETUP
+# =========================================================
+cores <- parallel::detectCores()
+cl <- makeCluster(max(1, cores - 1))
+registerDoParallel(cl)
+
+cat("Running on", cores - 1, "cores\n")
+
+# =========================================================
+# 6. SIMULATION LOOP
+# =========================================================
+results <- foreach(s = 1:nsim, .combine = rbind,
+                   .packages = c("deSolve")) %dopar% {
+                     
+                     true_par <- c(beta1 = beta1_true,
+                                   beta2 = beta2_true,
+                                   gamma = gamma_true,
+                                   tau = tau_true)
+                     
+                     sim_true <- safe_solve(true_par)
+                     if (is.null(sim_true)) return(NULL)
+                     
+                     y_obs <- sim_true$I + rnorm(length(times), 0, sigma_true)
+                     
+                     cp_profile <- rep(NA, length(candidate_tau))
+                     fits <- vector("list", length(candidate_tau))
+                     
+                     start <- c(0.3, 0.1, 0.1, 0.01)
+                     
+                     for (i in seq_along(candidate_tau)) {
+                       
+                       fit <- try(
+                         optim(start, nll,
+                               tau_fixed = candidate_tau[i],
+                               y_obs = y_obs,
+                               method = "L-BFGS-B",
+                               lower = c(1e-3, 1e-3, 1e-3, 1e-4),
+                               upper = c(2, 2, 1, 1),
+                               control = list(maxit = 50)),
+                         silent = TRUE
+                       )
+                       
+                       if (!inherits(fit, "try-error") && is.finite(fit$value)) {
+                         cp_profile[i] <- fit$value
+                         fits[[i]] <- fit
+                       }
+                     }
+                     
+                     valid <- which(is.finite(cp_profile))
+                     if (length(valid) == 0) return(NULL)
+                     
+                     best <- valid[which.min(cp_profile[valid])]
+                     best_fit <- fits[[best]]
+                     
+                     par_hat <- best_fit$par
+                     names(par_hat) <- c("beta1","beta2","gamma","sigma")
+                     
+                     data.frame(
+                       sim = s,
+                       beta1_hat = par_hat["beta1"],
+                       beta2_hat = par_hat["beta2"],
+                       gamma_hat = par_hat["gamma"],
+                       tau_hat = candidate_tau[best]
+                     )
+                   }
+
+res <- na.omit(results)
+
+cat("\n================ SIMULATION SUMMARY ================\n")
+print(res)
+
+# =========================================================
+# 7. BOOTSTRAP
+# =========================================================
+cat("\n================ BOOTSTRAP START ================\n")
+
+boot_results <- foreach(b = 1:nboot, .combine = rbind,
+                        .packages = c("deSolve")) %dopar% {
+                          
+                          base_par <- c(beta1 = mean(res$beta1_hat),
+                                        beta2 = mean(res$beta2_hat),
+                                        gamma = mean(res$gamma_hat),
+                                        tau = median(res$tau_hat))
+                          
+                          sim_boot <- safe_solve(base_par)
+                          if (is.null(sim_boot)) return(NULL)
+                          
+                          y_boot <- sim_boot$I + rnorm(length(times), 0, sigma_true)
+                          
+                          cp_profile <- rep(NA, length(candidate_tau))
+                          fits <- vector("list", length(candidate_tau))
+                          
+                          start <- c(0.3, 0.1, 0.1, 0.01)
+                          
+                          for (i in seq_along(candidate_tau)) {
+                            
+                            fit <- try(
+                              optim(start, nll,
+                                    tau_fixed = candidate_tau[i],
+                                    y_obs = y_boot,
+                                    method = "L-BFGS-B",
+                                    lower = c(1e-3, 1e-3, 1e-3, 1e-4),
+                                    upper = c(2, 2, 1, 1),
+                                    control = list(maxit = 50)),
+                              silent = TRUE
+                            )
+                            
+                            if (!inherits(fit, "try-error") && is.finite(fit$value)) {
+                              cp_profile[i] <- fit$value
+                              fits[[i]] <- fit
+                            }
+                          }
+                          
+                          valid <- which(is.finite(cp_profile))
+                          if (length(valid) == 0) return(NULL)
+                          
+                          best <- valid[which.min(cp_profile[valid])]
+                          
+                          par_hat <- fits[[best]]$par
+                          names(par_hat) <- c("beta1","beta2","gamma","sigma")
+                          
+                          data.frame(
+                            boot = b,
+                            beta1_hat = par_hat["beta1"],
+                            beta2_hat = par_hat["beta2"],
+                            gamma_hat = par_hat["gamma"],
+                            tau_hat = candidate_tau[best]
+                          )
+                        }
+
+boot_res <- na.omit(boot_results)
+
+cat("\n================ BOOTSTRAP SUMMARY ================\n")
+print(data.frame(
+  tau_mean = mean(boot_res$tau_hat),
+  tau_sd   = sd(boot_res$tau_hat)
+))
+
+stopCluster(cl)
+
+# =========================================================
+# 8. ================= PLOTS =================
+# =========================================================
+
+# ---- (1) Simulation tau distribution
+hist(res$tau_hat,
+     main = expression("Simulation: Distribution of " * hat(tau)),
+     xlab = expression(hat(tau)))
+
+abline(v = tau_true, col = "red", lwd = 2)
+
+# ---- (2) Bootstrap tau distribution
+hist(boot_res$tau_hat,
+     main = expression("Bootstrap: Distribution of " * hat(tau)),
+     xlab = expression(hat(tau)))
+
+abline(v = tau_true, col = "red", lwd = 2)
+
+# ---- (3) Boxplot comparison
+boxplot(res$tau_hat, boot_res$tau_hat,
+        names = c("Simulation", "Bootstrap"),
+        main = "Tau Comparison",
+        ylab = expression(hat(tau)))
+abline(h = tau_true, col = "red", lwd = 2)
+
+# ---- (4) Example fitted trajectory (mean simulation)
+true_par <- c(beta1 = beta1_true,
+              beta2 = beta2_true,
+              gamma = gamma_true,
+              tau = tau_true)
+
+sim_true <- safe_solve(true_par)
+
+mean_par <- c(beta1 = mean(res$beta1_hat),
+              beta2 = mean(res$beta2_hat),
+              gamma = mean(res$gamma_hat),
+              tau = median(res$tau_hat))
+
+sim_fit <- safe_solve(mean_par)
+
+plot(times, sim_true$I, type = "l", lwd = 2,
+     ylim = c(0, max(sim_true$I)),
+     main = "SIR Fit Comparison",
+     ylab = "I(t)", xlab = "Time")
+
+lines(times, sim_fit$I, lwd = 2, col = "blue")
+
+legend("topright",
+       legend = c("True", "Fitted"),
+       lty = 1,
+       col = c("black", "blue"))
+```
