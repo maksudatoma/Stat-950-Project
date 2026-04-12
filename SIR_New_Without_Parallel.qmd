@@ -328,3 +328,847 @@ if (nrow(boot_clean) > 0) {
        xlab = "tau")
 }
 ```
+
+
+## Bayesian Approach
+
+```{r}
+# =========================================================
+# BAYESIAN MCMC FOR SIR CHANGE-POINT MODEL
+# =========================================================
+# This section mirrors the logistic MCMC exactly.
+# The only difference: log-likelihood calls safe_solve()
+# instead of a closed-form formula.
+# =========================================================
+
+# ---------------------------------------------------------
+# STEP 3.1: LOG-PRIOR
+# Returns 0 if all parameters in bounds, -Inf if not
+# Encodes Uniform priors with biologically meaningful bounds
+# ---------------------------------------------------------
+log_prior_sir <- function(beta1, beta2, gamma, sigma, tau) {
+  if (beta1 < 0.001 || beta1 > 2)    return(-Inf)
+  if (beta2 < 0.001 || beta2 > 2)    return(-Inf)
+  if (gamma  < 0.001 || gamma  > 1)  return(-Inf)
+  if (sigma  < 1e-4  || sigma  > 0.5) return(-Inf)
+  if (!(tau  %in% candidate_tau))    return(-Inf)
+  return(0)  # log(1) = 0 for uniform within bounds
+}
+
+# ---------------------------------------------------------
+# STEP 3.2: LOG-LIKELIHOOD
+# Solves SIR ODEs for given parameters, then computes
+# Gaussian log-likelihood against observed data
+# ---------------------------------------------------------
+log_lik_sir <- function(beta1, beta2, gamma, sigma, tau, y_obs) {
+  par <- c(beta1 = beta1, beta2 = beta2,
+           gamma = gamma, tau   = tau)
+  
+  sim <- safe_solve(par)           # solve ODEs numerically
+  if (is.null(sim)) return(-Inf)   # ODE failed — reject
+  
+  mu <- sim$I                      # model-predicted I(t)
+  
+  if (any(!is.finite(mu))) return(-Inf)
+  
+  sum(dnorm(y_obs, mean = mu, sd = sigma, log = TRUE))
+}
+
+# ---------------------------------------------------------
+# STEP 3.3: LOG-POSTERIOR
+# log-posterior = log-likelihood + log-prior
+# Since priors are uniform, log-prior is 0 or -Inf
+# ---------------------------------------------------------
+log_post_sir <- function(beta1, beta2, gamma, sigma, tau, y_obs) {
+  lp <- log_prior_sir(beta1, beta2, gamma, sigma, tau)
+  if (!is.finite(lp)) return(-Inf)
+  lp + log_lik_sir(beta1, beta2, gamma, sigma, tau, y_obs)
+}
+```
+
+
+```{r}
+# ---------------------------------------------------------
+# STEP 4: METROPOLIS-WITHIN-GIBBS SAMPLER FOR SIR
+#
+# Arguments:
+#   y_obs       : observed infected counts
+#   init        : named list of starting values
+#   n_iter      : total MCMC iterations
+#   proposal_sd : named list of proposal step sizes
+#
+# Each continuous parameter is updated one at a time
+# using a normal random walk proposal.
+# tau is updated using a discrete random walk.
+# ---------------------------------------------------------
+run_mcmc_sir <- function(y_obs, init, n_iter = 15000,
+                         proposal_sd = list(beta1 = 0.01,
+                                            beta2 = 0.005,
+                                            gamma = 0.005,
+                                            sigma = 0.001)) {
+  
+  # Storage matrix
+  chain <- matrix(NA, nrow = n_iter, ncol = 5)
+  colnames(chain) <- c("beta1", "beta2", "gamma", "sigma", "tau")
+  
+  # Initialize from starting values
+  beta1_cur <- init$beta1
+  beta2_cur <- init$beta2
+  gamma_cur <- init$gamma
+  sigma_cur <- init$sigma
+  tau_cur   <- init$tau
+  
+  # Compute initial log-posterior
+  lp_cur <- log_post_sir(beta1_cur, beta2_cur, gamma_cur,
+                         sigma_cur, tau_cur, y_obs)
+  
+  # Track acceptance counts
+  accept <- rep(0, 5)
+  names(accept) <- c("beta1", "beta2", "gamma", "sigma", "tau")
+  
+  cat("Starting SIR MCMC...\n")
+  cat("(This is slower than logistic MCMC because each step solves ODEs)\n\n")
+  
+  for (i in 1:n_iter) {
+    
+    # ---- Update beta1 ----
+    beta1_prop <- beta1_cur + rnorm(1, 0, proposal_sd$beta1)
+    lp_prop <- log_post_sir(beta1_prop, beta2_cur, gamma_cur,
+                            sigma_cur, tau_cur, y_obs)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      beta1_cur <- beta1_prop
+      lp_cur    <- lp_prop
+      accept["beta1"] <- accept["beta1"] + 1
+    }
+    
+    # ---- Update beta2 ----
+    beta2_prop <- beta2_cur + rnorm(1, 0, proposal_sd$beta2)
+    lp_prop <- log_post_sir(beta1_cur, beta2_prop, gamma_cur,
+                            sigma_cur, tau_cur, y_obs)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      beta2_cur <- beta2_prop
+      lp_cur    <- lp_prop
+      accept["beta2"] <- accept["beta2"] + 1
+    }
+    
+    # ---- Update gamma ----
+    gamma_prop <- gamma_cur + rnorm(1, 0, proposal_sd$gamma)
+    lp_prop <- log_post_sir(beta1_cur, beta2_cur, gamma_prop,
+                            sigma_cur, tau_cur, y_obs)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      gamma_cur <- gamma_prop
+      lp_cur    <- lp_prop
+      accept["gamma"] <- accept["gamma"] + 1
+    }
+    
+    # ---- Update sigma ----
+    sigma_prop <- sigma_cur + rnorm(1, 0, proposal_sd$sigma)
+    lp_prop <- log_post_sir(beta1_cur, beta2_cur, gamma_cur,
+                            sigma_prop, tau_cur, y_obs)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      sigma_cur <- sigma_prop
+      lp_cur    <- lp_prop
+      accept["sigma"] <- accept["sigma"] + 1
+    }
+    
+    # ---- Update tau (discrete random walk) ----
+    # Propose jump of -2, -1, +1, or +2
+    jump     <- sample(c(-2, -1, 1, 2), size = 1)
+    tau_prop <- tau_cur + jump
+    lp_prop  <- log_post_sir(beta1_cur, beta2_cur, gamma_cur,
+                             sigma_cur, tau_prop, y_obs)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      tau_cur <- tau_prop
+      lp_cur  <- lp_prop
+      accept["tau"] <- accept["tau"] + 1
+    }
+    
+    # Store current state
+    chain[i, ] <- c(beta1_cur, beta2_cur, gamma_cur,
+                    sigma_cur, tau_cur)
+    
+    # Progress update every 1000 iterations
+    if (i %% 1000 == 0) {
+      cat("  Iteration", i, "of", n_iter,
+          "| Current tau:", tau_cur, "\n")
+    }
+  }
+  
+  cat("\nDone.\n")
+  cat("Acceptance rates:\n")
+  print(round(accept / n_iter, 3))
+  
+  list(chain = chain, accept_rate = accept / n_iter)
+}
+```
+
+
+```{r}
+# ---------------------------------------------------------
+# STEP 5: FIT ONE DATASET AND RUN THE SAMPLER
+# We use the same single dataset approach as the logistic:
+# 1. Generate one dataset from true parameters
+# 2. Get MLE estimates (use as starting point for MCMC)
+# 3. Run MCMC starting from MLE
+# ---------------------------------------------------------
+
+set.seed(2026)
+
+# Generate one clean dataset from true parameters
+true_par_one <- c(beta1 = beta1_true,
+                  beta2 = beta2_true,
+                  gamma = gamma_true,
+                  tau   = tau_true)
+
+sim_one  <- safe_solve(true_par_one)
+y_one    <- sim_one$I + rnorm(length(times), 0, sigma_true)
+
+# Quick MLE fit on this one dataset to get starting values
+# (reuse your profile search logic)
+cp_profile_one <- rep(NA, length(candidate_tau))
+fits_one       <- vector("list", length(candidate_tau))
+start_mle      <- c(0.3, 0.1, 0.1, 0.01)
+
+cat("Running MLE profile search for starting values...\n")
+
+for (i in seq_along(candidate_tau)) {
+  fit_i <- try(
+    optim(start_mle, nll,
+          tau_fixed = candidate_tau[i],
+          y_obs     = y_one,
+          method    = "L-BFGS-B",
+          lower     = c(1e-3, 1e-3, 1e-3, 1e-4),
+          upper     = c(2, 2, 1, 1),
+          control   = list(maxit = 100)),
+    silent = TRUE
+  )
+  if (!inherits(fit_i, "try-error") && is.finite(fit_i$value)) {
+    cp_profile_one[i] <- fit_i$value
+    fits_one[[i]]     <- fit_i
+  }
+}
+
+best_one     <- which.min(cp_profile_one)
+tau_mle      <- candidate_tau[best_one]
+par_mle      <- fits_one[[best_one]]$par
+names(par_mle) <- c("beta1", "beta2", "gamma", "sigma")
+
+cat("MLE estimates for starting values:\n")
+cat("  beta1 =", round(par_mle["beta1"], 4), "\n")
+cat("  beta2 =", round(par_mle["beta2"], 4), "\n")
+cat("  gamma =", round(par_mle["gamma"], 4), "\n")
+cat("  sigma =", round(par_mle["sigma"], 4), "\n")
+cat("  tau   =", tau_mle, "\n\n")
+
+# Use MLE estimates as starting point — chain starts near posterior mode
+init_sir <- list(
+  beta1 = as.numeric(par_mle["beta1"]),
+  beta2 = as.numeric(par_mle["beta2"]),
+  gamma = as.numeric(par_mle["gamma"]),
+  sigma = as.numeric(par_mle["sigma"]),
+  tau   = tau_mle
+)
+
+# Run MCMC
+set.seed(2026)
+
+mcmc_sir <- run_mcmc_sir(
+  y_obs       = y_one,
+  init        = init_sir,
+  n_iter      = 15000,
+  proposal_sd = list(beta1 = 0.005,
+                     beta2 = 0.008,
+                     gamma = 0.003,
+                     sigma = 0.005)
+)
+
+# Check tau behavior
+cat("\nTau posterior distribution:\n")
+print(table(mcmc_sir$chain[, "tau"]))
+
+cat("\nProportion of time tau stayed at 20:",
+    mean(mcmc_sir$chain[, "tau"] == 20), "\n")
+
+# Check if likelihood is very different at neighboring tau values
+cat("\nLog-likelihood at tau=19:", 
+    log_lik_sir(init_sir$beta1, init_sir$beta2, 
+                init_sir$gamma, init_sir$sigma, 19, y_one), "\n")
+cat("Log-likelihood at tau=20:", 
+    log_lik_sir(init_sir$beta1, init_sir$beta2, 
+                init_sir$gamma, init_sir$sigma, 20, y_one), "\n")
+cat("Log-likelihood at tau=21:", 
+    log_lik_sir(init_sir$beta1, init_sir$beta2, 
+                init_sir$gamma, init_sir$sigma, 21, y_one), "\n")
+```
+
+```{r}
+# Run this first to understand tau behavior
+cat("Log-likelihood at neighboring tau values:\n")
+cat("tau=18:", log_lik_sir(init_sir$beta1, init_sir$beta2,
+                           init_sir$gamma, init_sir$sigma, 18, y_one), "\n")
+cat("tau=19:", log_lik_sir(init_sir$beta1, init_sir$beta2,
+                           init_sir$gamma, init_sir$sigma, 19, y_one), "\n")
+cat("tau=20:", log_lik_sir(init_sir$beta1, init_sir$beta2,
+                           init_sir$gamma, init_sir$sigma, 20, y_one), "\n")
+cat("tau=21:", log_lik_sir(init_sir$beta1, init_sir$beta2,
+                           init_sir$gamma, init_sir$sigma, 21, y_one), "\n")
+cat("tau=22:", log_lik_sir(init_sir$beta1, init_sir$beta2,
+                           init_sir$gamma, init_sir$sigma, 22, y_one), "\n")
+```
+
+```{r}
+# ---------------------------------------------------------
+# FULL TAU PROFILE — plot all candidate values
+# ---------------------------------------------------------
+
+tau_full   <- seq(5, 50, by = 1)
+ll_full    <- sapply(tau_full, function(tv) {
+  log_lik_sir(init_sir$beta1, init_sir$beta2,
+              init_sir$gamma, init_sir$sigma,
+              tv, y_one)
+})
+
+# Plot
+plot(tau_full, ll_full,
+     type = "b", pch = 16, cex = 0.8,
+     col  = "steelblue", lwd = 2,
+     xlab = expression(tau),
+     ylab = "Log-likelihood",
+     main = "SIR Profile Log-likelihood over Candidate Change-Points")
+abline(v = tau_true, col = "red",  lty = 2, lwd = 2)
+abline(v = tau_mle,  col = "blue", lty = 3, lwd = 2)
+legend("bottomleft",
+       legend = c(expression(paste("True ", tau, " = 20")),
+                  expression(paste("MLE ", hat(tau), " = 20"))),
+       col = c("red", "blue"),
+       lty = c(2, 3), lwd = 2, bty = "n")
+```
+
+
+```{r}
+# =========================================================
+# STEP 6: LONGER CHAIN + BURN-IN + THINNING
+# =========================================================
+
+set.seed(2026)
+
+mcmc_sir <- run_mcmc_sir(
+  y_obs       = y_one,
+  init        = init_sir,
+  n_iter      = 30000,
+  proposal_sd = list(
+    beta1 = 0.005,
+    beta2 = 0.008,
+    gamma = 0.003,
+    sigma = 0.005
+  )
+)
+
+# Burn-in + thinning
+burnin_sir <- 5000
+thin_sir   <- 10
+raw_sir    <- mcmc_sir$chain[(burnin_sir + 1):30000, ]
+thin_idx   <- seq(1, nrow(raw_sir), by = thin_sir)
+chain_sir  <- raw_sir[thin_idx, ]
+
+cat("Post-burnin samples after thinning:", nrow(chain_sir), "\n")
+
+library(coda)
+ess_sir <- effectiveSize(chain_sir)
+cat("\n==== ESS AFTER THINNING ====\n")
+print(round(ess_sir, 0))
+
+# =========================================================
+# STEP 7: TAU IDENTIFIABILITY ANALYSIS
+# =========================================================
+
+cat("\n==== TAU IDENTIFIABILITY ANALYSIS ====\n")
+
+tau_full <- seq(5, 50, by = 1)
+ll_full  <- sapply(tau_full, function(tv) {
+  log_lik_sir(init_sir$beta1, init_sir$beta2,
+              init_sir$gamma, init_sir$sigma,
+              tv, y_one)
+})
+
+ll_table <- data.frame(
+  tau      = tau_full,
+  log_lik  = round(ll_full, 2),
+  delta_ll = round(ll_full - max(ll_full), 2)
+)
+cat("Full log-likelihood profile:\n")
+print(ll_table)
+
+# Profile plot
+plot(tau_full, ll_full,
+     type = "b", pch = 16, cex = 0.8,
+     col  = "steelblue", lwd = 2,
+     xlab = expression(tau),
+     ylab = "Log-likelihood",
+     main = "SIR Profile Log-likelihood over Candidate Change-Points")
+abline(v = tau_true, col = "red",  lty = 2, lwd = 2)
+abline(v = tau_mle,  col = "blue", lty = 3, lwd = 2)
+legend("bottomleft",
+       legend = c(expression(paste("True ", tau, " = 20")),
+                  expression(paste("MLE ",  hat(tau), " = 20"))),
+       col = c("red", "blue"),
+       lty = c(2, 3), lwd = 2, bty = "n")
+
+# =========================================================
+# STEP 8: TRACE PLOTS
+# =========================================================
+
+sir_param_names  <- c("beta1", "beta2", "gamma", "sigma", "tau")
+sir_true_vals    <- c(beta1_true, beta2_true, gamma_true, sigma_true, tau_true)
+sir_param_labels <- c(expression(beta[1]), expression(beta[2]),
+                      expression(gamma),   expression(sigma),
+                      expression(tau))
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:5) {
+  plot(chain_sir[, j],
+       type = "l", col = "steelblue",
+       xlab = "Post-burnin iteration",
+       ylab = sir_param_labels[[j]],
+       main = paste("Trace:", sir_param_names[j]))
+  abline(h = sir_true_vals[j], col = "red", lty = 2, lwd = 2)
+}
+
+par(mfrow = c(1, 1))
+
+
+
+# =========================================================
+# STEP 10: POSTERIOR DENSITY PLOTS
+# =========================================================
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:5) {
+
+  if (sir_param_names[j] == "tau") {
+    # tau is point mass — show as bar chart
+    tau_table <- table(chain_sir[, j])
+    barplot(tau_table / sum(tau_table),
+            main = expression("Posterior of " * tau),
+            xlab = expression(tau),
+            ylab = "Probability",
+            col  = "steelblue",
+            border = "white")
+    abline(v = which(names(tau_table) == as.character(tau_true)) - 0.5,
+           col = "red", lty = 2, lwd = 2)
+
+  } else {
+    d <- density(chain_sir[, j])
+    plot(d,
+         main = paste("Posterior:", sir_param_names[j]),
+         xlab = sir_param_labels[[j]],
+         col  = "steelblue", lwd = 2)
+
+    # Shade 95% credible interval
+    ci_lo   <- quantile(chain_sir[, j], 0.025)
+    ci_hi   <- quantile(chain_sir[, j], 0.975)
+    x_shade <- d$x[d$x >= ci_lo & d$x <= ci_hi]
+    y_shade <- d$y[d$x >= ci_lo & d$x <= ci_hi]
+    polygon(c(x_shade, rev(x_shade)),
+            c(y_shade, rep(0, length(y_shade))),
+            col = adjustcolor("steelblue", 0.3), border = NA)
+
+    abline(v = sir_true_vals[j],     col = "red",      lty = 2, lwd = 2)
+    abline(v = mean(chain_sir[, j]), col = "darkblue", lty = 1, lwd = 1)
+
+    legend("topright",
+           legend = c("True value", "Posterior mean", "95% CI"),
+           col    = c("red", "darkblue", "steelblue"),
+           lty    = c(2, 1, NA),
+           fill   = c(NA, NA, adjustcolor("steelblue", 0.3)),
+           border = c(NA, NA, NA),
+           bty = "n", cex = 0.8)
+  }
+}
+
+par(mfrow = c(1, 1))
+
+# =========================================================
+# STEP 11: POSTERIOR SUMMARY TABLE
+# Tau excluded from MCMC summary — point-identified
+# =========================================================
+
+chain_sir_cont  <- chain_sir[, c("beta1", "beta2", "gamma", "sigma")]
+
+post_mean_sir   <- as.numeric(apply(chain_sir_cont, 2, mean))
+post_median_sir <- as.numeric(apply(chain_sir_cont, 2, median))
+post_lower_sir  <- as.numeric(apply(chain_sir_cont, 2, quantile, 0.025))
+post_upper_sir  <- as.numeric(apply(chain_sir_cont, 2, quantile, 0.975))
+
+sir_posterior_summary <- data.frame(
+  Parameter   = c("beta1", "beta2", "gamma", "sigma"),
+  True_Value  = c(beta1_true, beta2_true, gamma_true, sigma_true),
+  Post_Mean   = post_mean_sir,
+  Post_Median = post_median_sir,
+  Lower_95    = post_lower_sir,
+  Upper_95    = post_upper_sir
+)
+
+cat("\n==== SIR POSTERIOR SUMMARY (continuous parameters) ====\n")
+print(round(sir_posterior_summary, 4))
+
+cat("\n==== TAU: POINT-IDENTIFIED ====\n")
+cat("Posterior of tau: point mass at tau = 20\n")
+cat("Log-likelihood drop to tau=19:",
+    round(max(ll_full) - ll_full[tau_full == 19], 2), "units\n")
+cat("Log-likelihood drop to tau=21:",
+    round(max(ll_full) - ll_full[tau_full == 21], 2), "units\n")
+
+# =========================================================
+# STEP 12: BOOTSTRAP vs BAYESIAN COMPARISON TABLE
+# =========================================================
+
+# Check boot_clean has sigma — if not, use sigma from chain
+has_sigma_boot <- "sigma_hat" %in% names(boot_clean)
+
+sir_comparison <- data.frame(
+  Parameter = c("beta1", "beta2", "gamma", "sigma"),
+
+  Boot_Lower = c(
+    quantile(boot_clean$beta1_hat, 0.025),
+    quantile(boot_clean$beta2_hat, 0.025),
+    quantile(boot_clean$gamma_hat, 0.025),
+    if (has_sigma_boot) quantile(boot_clean$sigma_hat, 0.025) else NA
+  ),
+  Boot_Upper = c(
+    quantile(boot_clean$beta1_hat, 0.975),
+    quantile(boot_clean$beta2_hat, 0.975),
+    quantile(boot_clean$gamma_hat, 0.975),
+    if (has_sigma_boot) quantile(boot_clean$sigma_hat, 0.975) else NA
+  ),
+
+  Bayes_Lower = post_lower_sir,
+  Bayes_Upper = post_upper_sir
+)
+
+cat("\n==== SIR: BOOTSTRAP vs BAYESIAN CIs ====\n")
+sir_comparison[, -1] <- round(sir_comparison[, -1], 4)
+print(sir_comparison)
+
+# =========================================================
+# STEP 13: FITTED TRAJECTORY PLOT
+# Shows observed data + true curve + fitted curve
+# =========================================================
+
+# True trajectory
+true_traj <- safe_solve(c(beta1 = beta1_true,
+                           beta2 = beta2_true,
+                           gamma = gamma_true,
+                           tau   = tau_true))
+
+# Posterior mean trajectory
+fitted_traj <- safe_solve(c(beta1 = mean(chain_sir[, "beta1"]),
+                             beta2 = mean(chain_sir[, "beta2"]),
+                             gamma = mean(chain_sir[, "gamma"]),
+                             tau   = 20))
+
+plot(times, y_one,
+     pch  = 16, cex = 0.7,
+     col  = "gray50",
+     xlab = "Time",
+     ylab = "Proportion Infected I(t)",
+     main = "SIR Model: Observed Data, True Mean, and Posterior Fit")
+
+lines(times, true_traj$I,   lwd = 2, col = "black")
+lines(times, fitted_traj$I, lwd = 2, col = "steelblue", lty = 2)
+
+abline(v = tau_true, col = "red",  lty = 2, lwd = 1.5)
+abline(v = tau_mle,  col = "blue", lty = 3, lwd = 1.5)
+
+legend("topright",
+       legend = c("Observed data", "True I(t)",
+                  "Posterior mean fit",
+                  expression(paste("True ", tau, " = 20")),
+                  expression(paste("MLE ",  hat(tau), " = 20"))),
+       col    = c("gray50", "black", "steelblue", "red", "blue"),
+       pch    = c(16, NA, NA, NA, NA),
+       lty    = c(NA, 1, 2, 2, 3),
+       lwd    = c(NA, 2, 2, 1.5, 1.5),
+       bty    = "n", cex = 0.85)
+
+# =========================================================
+# STEP 14: RUNTIME COMPARISON
+# Measures computational cost of MLE vs MCMC
+# Important for Section 7 of your paper
+# =========================================================
+
+cat("\n==== RUNTIME COMPARISON ====\n")
+
+# Time the MLE profile search
+time_mle_sir <- system.time({
+  for (i in seq_along(candidate_tau)) {
+    try(optim(start_mle, nll,
+              tau_fixed = candidate_tau[i],
+              y_obs     = y_one,
+              method    = "L-BFGS-B",
+              lower     = c(1e-3, 1e-3, 1e-3, 1e-4),
+              upper     = c(2, 2, 1, 1),
+              control   = list(maxit = 100)),
+        silent = TRUE)
+  }
+})
+
+# Time 1000 MCMC iterations as a sample
+time_mcmc_sir <- system.time({
+  run_mcmc_sir(y_obs = y_one, init = init_sir,
+               n_iter = 1000,
+               proposal_sd = list(beta1 = 0.005, beta2 = 0.008,
+                                  gamma = 0.003, sigma = 0.005))
+})
+
+cat("MLE profile search (46 tau values):",
+    round(time_mle_sir["elapsed"], 2), "seconds\n")
+cat("MCMC per 1000 iterations:",
+    round(time_mcmc_sir["elapsed"], 2), "seconds\n")
+cat("Estimated MCMC total (30000 iter):",
+    round(time_mcmc_sir["elapsed"] * 30, 2), "seconds\n")
+cat("MCMC is approximately",
+    round((time_mcmc_sir["elapsed"] * 30) / time_mle_sir["elapsed"], 1),
+    "x slower than one MLE profile search\n")
+```
+
+```{r}
+# =========================================================
+# STEP 8: TRACE PLOTS
+# =========================================================
+
+sir_param_names  <- c("beta1", "beta2", "gamma", "sigma", "tau")
+sir_true_vals    <- c(beta1_true, beta2_true, gamma_true, sigma_true, tau_true)
+sir_param_labels <- c(expression(beta[1]), expression(beta[2]),
+                      expression(gamma),   expression(sigma),
+                      expression(tau))
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:5) {
+  plot(chain_sir[, j],
+       type = "l", col = "steelblue",
+       xlab = "Post-burnin iteration",
+       ylab = sir_param_labels[[j]],
+       main = paste("Trace:", sir_param_names[j]))
+  abline(h = sir_true_vals[j], col = "red", lty = 2, lwd = 2)
+}
+
+par(mfrow = c(1, 1))
+
+# =========================================================
+# STEP 9: ACF PLOTS (skip tau — point mass, ACF undefined)
+# =========================================================
+
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:5) {
+  
+  # Skip tau — it never moves so ACF is undefined
+  if (sir_param_names[j] == "tau") next
+  
+  acf(chain_sir[, j],
+      main    = paste("ACF:", sir_param_names[j]),
+      col     = "steelblue",
+      lag.max = 50)
+}
+
+par(mfrow = c(1, 1))
+
+# =========================================================
+# STEP 10: POSTERIOR DENSITY PLOTS
+# =========================================================
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:5) {
+
+  if (sir_param_names[j] == "tau") {
+    # tau is point mass — show as bar chart
+    tau_table <- table(chain_sir[, j])
+    barplot(tau_table / sum(tau_table),
+            main = expression("Posterior of " * tau),
+            xlab = expression(tau),
+            ylab = "Probability",
+            col  = "steelblue",
+            border = "white")
+    abline(v = which(names(tau_table) == as.character(tau_true)) - 0.5,
+           col = "red", lty = 2, lwd = 2)
+
+  } else {
+    d <- density(chain_sir[, j])
+    plot(d,
+         main = paste("Posterior:", sir_param_names[j]),
+         xlab = sir_param_labels[[j]],
+         col  = "steelblue", lwd = 2)
+
+    # Shade 95% credible interval
+    ci_lo   <- quantile(chain_sir[, j], 0.025)
+    ci_hi   <- quantile(chain_sir[, j], 0.975)
+    x_shade <- d$x[d$x >= ci_lo & d$x <= ci_hi]
+    y_shade <- d$y[d$x >= ci_lo & d$x <= ci_hi]
+    polygon(c(x_shade, rev(x_shade)),
+            c(y_shade, rep(0, length(y_shade))),
+            col = adjustcolor("steelblue", 0.3), border = NA)
+
+    abline(v = sir_true_vals[j],     col = "red",      lty = 2, lwd = 2)
+    abline(v = mean(chain_sir[, j]), col = "darkblue", lty = 1, lwd = 1)
+
+    legend("topright",
+           legend = c("True value", "Posterior mean", "95% CI"),
+           col    = c("red", "darkblue", "steelblue"),
+           lty    = c(2, 1, NA),
+           fill   = c(NA, NA, adjustcolor("steelblue", 0.3)),
+           border = c(NA, NA, NA),
+           bty = "n", cex = 0.8)
+  }
+}
+
+par(mfrow = c(1, 1))
+
+# =========================================================
+# STEP 11: POSTERIOR SUMMARY TABLE (fixed)
+# =========================================================
+
+chain_sir_cont  <- chain_sir[, c("beta1", "beta2", "gamma", "sigma")]
+
+post_mean_sir   <- as.numeric(apply(chain_sir_cont, 2, mean))
+post_median_sir <- as.numeric(apply(chain_sir_cont, 2, median))
+post_lower_sir  <- as.numeric(apply(chain_sir_cont, 2, quantile, 0.025))
+post_upper_sir  <- as.numeric(apply(chain_sir_cont, 2, quantile, 0.975))
+
+sir_posterior_summary <- data.frame(
+  Parameter   = c("beta1", "beta2", "gamma", "sigma"),
+  True_Value  = c(beta1_true, beta2_true, gamma_true, sigma_true),
+  Post_Mean   = post_mean_sir,
+  Post_Median = post_median_sir,
+  Lower_95    = post_lower_sir,
+  Upper_95    = post_upper_sir
+)
+
+cat("\n==== SIR POSTERIOR SUMMARY (continuous parameters) ====\n")
+sir_posterior_summary[, -1] <- round(sir_posterior_summary[, -1], 4)
+print(sir_posterior_summary)
+
+cat("\n==== TAU: POINT-IDENTIFIED ====\n")
+cat("Posterior of tau: point mass at tau = 20\n")
+cat("Log-likelihood drop to tau=19:",
+    round(max(ll_full) - ll_full[tau_full == 19], 2), "units\n")
+cat("Log-likelihood drop to tau=21:",
+    round(max(ll_full) - ll_full[tau_full == 21], 2), "units\n")
+
+# =========================================================
+# STEP 12: BOOTSTRAP vs BAYESIAN COMPARISON TABLE
+# =========================================================
+
+# Check boot_clean has sigma — if not, use sigma from chain
+has_sigma_boot <- "sigma_hat" %in% names(boot_clean)
+
+sir_comparison <- data.frame(
+  Parameter = c("beta1", "beta2", "gamma", "sigma"),
+
+  Boot_Lower = c(
+    quantile(boot_clean$beta1_hat, 0.025),
+    quantile(boot_clean$beta2_hat, 0.025),
+    quantile(boot_clean$gamma_hat, 0.025),
+    if (has_sigma_boot) quantile(boot_clean$sigma_hat, 0.025) else NA
+  ),
+  Boot_Upper = c(
+    quantile(boot_clean$beta1_hat, 0.975),
+    quantile(boot_clean$beta2_hat, 0.975),
+    quantile(boot_clean$gamma_hat, 0.975),
+    if (has_sigma_boot) quantile(boot_clean$sigma_hat, 0.975) else NA
+  ),
+
+  Bayes_Lower = post_lower_sir,
+  Bayes_Upper = post_upper_sir
+)
+
+cat("\n==== SIR: BOOTSTRAP vs BAYESIAN CIs ====\n")
+sir_comparison[, -1] <- round(sir_comparison[, -1], 4)
+print(sir_comparison)
+
+# =========================================================
+# STEP 13: FITTED TRAJECTORY PLOT
+# Shows observed data + true curve + fitted curve
+# =========================================================
+
+# True trajectory
+true_traj <- safe_solve(c(beta1 = beta1_true,
+                           beta2 = beta2_true,
+                           gamma = gamma_true,
+                           tau   = tau_true))
+
+# Posterior mean trajectory
+fitted_traj <- safe_solve(c(beta1 = mean(chain_sir[, "beta1"]),
+                             beta2 = mean(chain_sir[, "beta2"]),
+                             gamma = mean(chain_sir[, "gamma"]),
+                             tau   = 20))
+
+plot(times, y_one,
+     pch  = 16, cex = 0.7,
+     col  = "gray50",
+     xlab = "Time",
+     ylab = "Proportion Infected I(t)",
+     main = "SIR Model: Observed Data, True Mean, and Posterior Fit")
+
+lines(times, true_traj$I,   lwd = 2, col = "black")
+lines(times, fitted_traj$I, lwd = 2, col = "steelblue", lty = 2)
+
+abline(v = tau_true, col = "red",  lty = 2, lwd = 1.5)
+abline(v = tau_mle,  col = "blue", lty = 3, lwd = 1.5)
+
+legend("topright",
+       legend = c("Observed data", "True I(t)",
+                  "Posterior mean fit",
+                  expression(paste("True ", tau, " = 20")),
+                  expression(paste("MLE ",  hat(tau), " = 20"))),
+       col    = c("gray50", "black", "steelblue", "red", "blue"),
+       pch    = c(16, NA, NA, NA, NA),
+       lty    = c(NA, 1, 2, 2, 3),
+       lwd    = c(NA, 2, 2, 1.5, 1.5),
+       bty    = "n", cex = 0.85)
+
+# =========================================================
+# STEP 14: RUNTIME COMPARISON
+# Measures computational cost of MLE vs MCMC
+# Important for Section 7 of your paper
+# =========================================================
+
+cat("\n==== RUNTIME COMPARISON ====\n")
+
+# Time the MLE profile search
+time_mle_sir <- system.time({
+  for (i in seq_along(candidate_tau)) {
+    try(optim(start_mle, nll,
+              tau_fixed = candidate_tau[i],
+              y_obs     = y_one,
+              method    = "L-BFGS-B",
+              lower     = c(1e-3, 1e-3, 1e-3, 1e-4),
+              upper     = c(2, 2, 1, 1),
+              control   = list(maxit = 100)),
+        silent = TRUE)
+  }
+})
+
+# Time 1000 MCMC iterations as a sample
+time_mcmc_sir <- system.time({
+  run_mcmc_sir(y_obs = y_one, init = init_sir,
+               n_iter = 1000,
+               proposal_sd = list(beta1 = 0.005, beta2 = 0.008,
+                                  gamma = 0.003, sigma = 0.005))
+})
+
+cat("MLE profile search (46 tau values):",
+    round(time_mle_sir["elapsed"], 2), "seconds\n")
+cat("MCMC per 1000 iterations:",
+    round(time_mcmc_sir["elapsed"], 2), "seconds\n")
+cat("Estimated MCMC total (30000 iter):",
+    round(time_mcmc_sir["elapsed"] * 30, 2), "seconds\n")
+cat("MCMC is approximately",
+    round((time_mcmc_sir["elapsed"] * 30) / time_mle_sir["elapsed"], 1),
+    "x slower than one MLE profile search\n")
+```
+
