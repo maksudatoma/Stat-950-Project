@@ -329,7 +329,6 @@ if (nrow(boot_clean) > 0) {
 }
 ```
 
-
 ## Bayesian Approach
 
 ```{r}
@@ -385,7 +384,6 @@ log_post_sir <- function(beta1, beta2, gamma, sigma, tau, y_obs) {
   lp + log_lik_sir(beta1, beta2, gamma, sigma, tau, y_obs)
 }
 ```
-
 
 ```{r}
 # ---------------------------------------------------------
@@ -501,7 +499,6 @@ run_mcmc_sir <- function(y_obs, init, n_iter = 15000,
   list(chain = chain, accept_rate = accept / n_iter)
 }
 ```
-
 
 ```{r}
 # ---------------------------------------------------------
@@ -643,7 +640,6 @@ legend("bottomleft",
        col = c("red", "blue"),
        lty = c(2, 3), lwd = 2, bty = "n")
 ```
-
 
 ```{r}
 # =========================================================
@@ -1173,6 +1169,7 @@ cat("MCMC is approximately",
 ```
 
 
+
 ```{r}
 
 # =========================================================
@@ -1222,4 +1219,5 @@ for (j in 1:5) {
 
 par(mfrow = c(1, 1))
 ```
+
 
