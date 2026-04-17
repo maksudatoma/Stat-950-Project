@@ -1172,3 +1172,54 @@ cat("MCMC is approximately",
     "x slower than one MLE profile search\n")
 ```
 
+
+```{r}
+
+# =========================================================
+# STEP 9: ACF PLOTS (skip tau — point mass, ACF undefined)
+# =========================================================
+
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:5) {
+  
+  # Skip tau — it never moves so ACF is undefined
+  if (sir_param_names[j] == "tau") next
+  
+  acf(chain_sir[, j],
+      main    = paste("ACF:", sir_param_names[j]),
+      col     = "steelblue",
+      lag.max = 50)
+}
+
+par(mfrow = c(1, 1))
+
+
+# =========================================================
+# STEP 9: ACF PLOTS — with proper parameter labels
+# (skip tau — point mass, ACF undefined)
+# =========================================================
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+sir_acf_labels <- list(
+  beta1 = expression("ACF: " * beta[1]),
+  beta2 = expression("ACF: " * beta[2]),
+  gamma = expression("ACF: " * gamma),
+  sigma = expression("ACF: " * sigma)
+)
+
+for (j in 1:5) {
+  
+  # Skip tau — it never moves so ACF is undefined
+  if (sir_param_names[j] == "tau") next
+  
+  acf(chain_sir[, j],
+      main    = sir_acf_labels[[sir_param_names[j]]],
+      col     = "steelblue",
+      lag.max = 50,
+      cex.main = 1.2)
+}
+
+par(mfrow = c(1, 1))
+```
+
