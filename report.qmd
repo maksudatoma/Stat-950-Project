@@ -369,7 +369,7 @@ Unlike the logistic model, its mean function is not available in closed form and
 
 **SIR Change-Point Model**
 
-To allow for structural changes (e.g., interventions), we introduce a change-point $$\tau$$ in the transmission rate:
+To allow for structural changes (e.g., interventions), we introduce a change-point $\tau$ in the transmission rate:
 
 $$
 \beta =
@@ -407,18 +407,18 @@ where $S(t)$, $I(t)$, and $R(t)$ represent the number of susceptible, infected, 
 
 **Parameter Interpretation**
 
-*General Parameters*
+**General Parameters**
 
 -   $N$: total population size (assumed known or fixed)
 -   $\sigma^2 > 0$: variance of measurement error
 
-*Epidemic Parameters*
+**Epidemic Parameters**
 
 -   $\beta > 0$: transmission rate
 -   $\gamma > 0$: recovery rate
 -   $1 / \gamma$: average infectious period
 
-*Change-Point Parameters*
+**Change-Point Parameters**
 
 -   $\beta_1 > 0$: transmission rate before the change-point
 -   $\beta_2 > 0$: transmission rate after the change-point
@@ -451,19 +451,17 @@ Since $\tau$ is discrete, it is estimated by a grid search, and the final estima
 
 ### 3.1.2 Simulation Study
 
-A simulation study was conducted to evaluate the performance of the change-point SIR model.
-
 Data were generated from the SIR model with a true change-point using:
 
--   time points $t = 0$ to $60$
--   true parameters $\beta_1 = 0.40$, $\beta_2 = 0.15$, $\gamma = 0.10$, and $\tau = 20$
--   initial conditions $S(0) = 0.999$, $I(0) = 0.001$, $R(0) = 0$
+-   time points: $t = 0$ to $60$
+-   true parameters: $\beta_1 = 0.40$, $\beta_2 = 0.15$, $\gamma = 0.10$, and $\tau = 20$
+-   initial conditions: $S(0) = 0.999$, $I(0) = 0.001$, $R(0) = 0$
 -   Gaussian noise with standard deviation $\sigma = 0.01$
 
 The estimation procedure was applied to each simulated dataset and repeated for 100 replications.
 Model performance was evaluated using bias, root mean squared error (RMSE), and change-point estimation accuracy.
 
-### 3.1.3 Simulation Results
+Simulation Results
 
 **Table 7 : Simulation Performance Metrics**
 
@@ -478,13 +476,11 @@ All parameters are estimated accurately, with very small bias and low RMSE.
 The transmission rates $\beta_1$ and $\beta_2$ are well recovered, with slightly higher variability for $\beta_2$ due to less information after the change-point.
 The recovery rate $\gamma$ is estimated with high precision, and the change-point $\tau$ is accurately identified, with estimates close to the true value and low variability.
 
-### 3.1.4 Bootstrap Inference
+### 3.1.3 Bootstrap Inference
 
 Bootstrap datasets were generated from the fitted SIR model by simulating from the estimated mean trajectory and adding Gaussian noise using the estimated error standard deviation.
 The change-point model was then refitted to each bootstrap dataset.
 This process was repeated for 200 bootstrap replications.
-
-### 3.1.5 Bootstrap Results
 
 **Table 8 : Bootstrap Summary for Change-Point**
 
@@ -502,13 +498,10 @@ This process was repeated for 200 bootstrap replications.
 | $$\gamma$$  | 0.0866 | 0.1110 |
 | $$\tau$$    |  19.00 |  21.00 |
 
-All parameters are estimated accurately, with very small bias and low RMSE.
-The transmission rates $\beta_1$ and $\beta_2$ are well recovered, with slightly higher variability for $\beta_2$ due to less information after the change-point.
-The recovery rate $\gamma$ is estimated with high precision, and the change-point $\tau$ is accurately identified, with estimates close to the true value and low variability.
 
-### 3.1.6 Overall Interpretation
+The bootstrap distribution of $\tau$ is tightly centered around the true value, indicating stable estimation. All confidence intervals contain the true parameter values. The interval for $\tau$ is relatively narrow, indicating precise estimation of the change-point.
 
-The results show that the change-point SIR model performs well in both estimation and inference.
+These results show that the change-point SIR model performs well in both estimation and inference.
 All parameters are recovered with low bias and variability, and the change-point $\tau$ is estimated accurately and consistently.
 The bootstrap procedure provides reliable confidence intervals, while the slightly higher variability in $\beta_2$ reflects the greater difficulty of estimating post-change dynamics.
 Overall, the estimation procedure is both numerically stable and statistically reliable under the simulation setting.
@@ -609,6 +602,11 @@ The recovery rate $\gamma$ is estimated with good precision, with the true value
 The posterior for $\tau$ places all its mass at $\tau = 20$, exactly matching the true change-point.
 Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 31, the SIR change-point is much more identifiable because a change in transmission rate affects the entire future trajectory of $I(t)$ through the ODE system.
 
+
+![*SIR model fitted trajectory.*](SIR.png){#fig-sir width="65%"}
+
+Figure 11 shows that the posterior fit closely matches both the observed data and the true trajectory, indicating a good model fit. The change-point is correctly identified around  $\tau = 20$, capturing the peak and subsequent decline of the epidemic.
+
 ### 3.2.2 Uncertainty Quantification: Bootstrap vs. Bayesian
 
 **Table 13 : Comparison of 95% bootstrap confidence intervals and Bayesian credible intervals for SIR model parameters.**
@@ -619,18 +617,11 @@ Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 3
 | $\beta_2$ |      0.1669 |      0.1758 |      0.1495 |      0.1908 |
 | $\gamma$  |      0.1071 |      0.1080 |      0.0996 |      0.1106 |
 
-The two methods give noticeably different uncertainty estimates for the SIR model, unlike the logistic case where they were in close agreement.
+
 For $\beta_1$, both approaches produce narrow, overlapping intervals, indicating consistent estimation.
 For $\beta_2$, the Bayesian credible interval $(0.1495, 0.1908)$ is much wider than the bootstrap interval $(0.1669, 0.1758)$, suggesting that the bootstrap may underestimate uncertainty in the post-change transmission rate.
 For $\gamma$, the pattern is reversed: the bootstrap interval $(0.1071, 0.1080)$ is much narrower than the Bayesian interval $(0.0996, 0.1106)$, suggesting overconfidence in the bootstrap estimate for this dataset.
 
-Across models, the change-point in the SIR model is estimated much more precisely than in the logistic model.
-The posterior for $\tau$ collapses to a single value, indicating near-perfect identifiability.
-This reflects the mechanistic structure of the SIR model, where a change in transmission rate affects the entire system trajectory, making the timing of the change-point much easier to detect.
-
-![*SIR model fitted trajectory.*](SIR.png){#fig-sir width="65%"}
-
-The posterior mean trajectory closely follows the true curve throughout, confirming accurate model fit.
 
 # 4. Computational Considerations
 
@@ -685,20 +676,17 @@ Finally, for MCMC tuning, starting from the MLEs and adjusting proposal standard
 
 # 5. Discussion
 
-This project demonstrates that the same inferential pipeline, profile likelihood, parametric bootstrap, and Bayesian MCMC, carries fundamentally different computational implications depending on model structure.
-Both models successfully recovered true parameters with negligible bias, and the change-point was accurately identified under all inferential approaches, confirming that the proposed methods are statistically reliable in both the logistic and SIR settings.
+This study investigated change-point detection in two nonlinear dynamical systems—a logistic growth model and an SIR epidemic model—using both frequentist and Bayesian approaches. Across both models, the results demonstrate that change-point models can accurately recover underlying parameters and identify structural changes when they are present.
 
-The most significant finding is the contrast in change-point identifiability between the two models.
-In the logistic model, the posterior for $\tau$ spread across two adjacent values, reflecting moderate identifiability driven by local curvature changes.
-In the SIR model, the posterior collapsed to a point mass at the true value, with log-likelihood differences exceeding 50 units between adjacent candidates.
-This stark difference arises because a transmission rate change in the SIR model propagates through the entire coupled ODE system, making its timing far more precisely detectable than a growth rate change in the logistic model.
+A key finding is the strong agreement between frequentist and Bayesian inference in the logistic model. Parameter estimates showed negligible bias, and bootstrap confidence intervals closely matched Bayesian credible intervals. This consistency suggests that, in settings with relatively simple model structure and highly informative data, both paradigms provide reliable and robust inference.
 
-Computationally, the SIR model was substantially more demanding.
-The profile likelihood search was 50--100 times slower, the parametric bootstrap required approximately three hours compared to 30 seconds for the logistic model, and MCMC required ODE solving at every iteration.
-Despite this cost, MCMC proved more computationally efficient than the bootstrap for the SIR setting, since it amortizes ODE-solving cost across iterations rather than requiring full independent refits.
+In contrast, the SIR model reveals important differences. While parameter recovery remains accurate, uncertainty quantification differs more substantially between bootstrap and Bayesian approaches. The Bayesian framework better captures posterior dependence among parameters, leading to wider and more realistic uncertainty intervals in some cases. This highlights the importance of accounting for model-induced parameter correlations in mechanistic models. 
 
-Both MCMC samplers exhibited low effective sample sizes for structural parameters due to posterior correlation induced by the shared nonlinear mean function.
-While thinning and longer chains partially addressed this, gradient-based samplers such as Hamiltonian Monte Carlo would more fundamentally resolve it and represent a natural direction for future work.
+A central contribution of this work is the comparison of change-point identifiability across models. In the logistic model, the change-point posterior is concentrated but still exhibits small uncertainty, spreading across adjacent values. In the SIR model, however, the change-point is effectively identified without uncertainty, with the posterior collapsing to a point mass. This reflects the mechanistic nature of the SIR system, where changes in transmission rates propagate through the entire trajectory, making the timing of the change highly detectable.
+
+From a computational perspective, model complexity plays a critical role. The logistic model is computationally efficient due to its closed-form structure, while the SIR model is substantially more expensive because it requires numerical ODE solutions at each likelihood evaluation. This leads to significantly higher runtime for both optimization and bootstrap procedures. Despite this, Bayesian MCMC remains competitive in the SIR setting, as it amortizes computational cost across iterations.
+
+Overall, the results demonstrate that both inferential accuracy and computational cost depend strongly on model structure. Simpler models allow for fast and stable inference with agreement across methods, while more mechanistic models improve identifiability but introduce greater computational and inferential complexity.
 Additionally, real data applications, multiple change-point extensions, and comparison with probabilistic programming frameworks such as Stan remain promising avenues for extending this analysis.
 
 # References
@@ -706,4 +694,4 @@ Additionally, real data applications, multiple change-point extensions, and comp
 ::: {#refs}
 :::
 
-# Appendix
+
