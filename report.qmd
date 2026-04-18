@@ -192,7 +192,7 @@ Furthermore, the change-point model is preferred over the no-change model in all
 ::: {layout-ncol="2"}
 ![*Estimated change-point values across simulations.*](hist.png)
 
-![*Estimated growth rates across simulations.*](box.jpeg)
+![*Estimated growth rates across simulations.*](box.png)
 :::
 
 The histogram shows that $\hat{\tau}$ is concentrated near the true value, while the boxplots indicate that both growth rates are well estimated, with slightly higher variability for $r_2$.
@@ -306,7 +306,7 @@ The trace for $\tau$ alternates mainly between 30 and 31, reflecting its discret
 
 ![*Autocorrelation function (ACF) plots for all model parameters after thinning by a factor of 10.*](ACF.png){#fig-acf width="65%"}
 
-Figure 6 shows the ACF plots after thinning.
+@fig-acf shows the ACF plots after thinning.
 The parameters $\sigma$ and $\tau$ exhibit rapid decay, indicating efficient mixing, while $K$, $r_1$, $r_2$, and $t_0$ show persistent autocorrelation, reflecting strong posterior dependence.
 This is consistent with their lower ESS values compared to $\sigma$ and $\tau$.
 Despite this, posterior means and medians remain reliable.
@@ -543,11 +543,11 @@ The sampler was run for 30,000 iterations, with 5,000 burn-in and thinning by a 
 
 | Parameter   |     Proposal SD | Acceptance Rate |
 |-------------|----------------:|----------------:|
-| $$\beta_1$$ |           0.005 |           0.275 |
-| $$\beta_2$$ |           0.008 |           0.365 |
-| $$\gamma$$  |           0.003 |           0.226 |
-| $$\sigma$$  |           0.005 |           0.182 |
-| $$\tau$$    | $$\pm\{1, 2\}$$ |           0.000 |
+| $\beta_1$   |           0.005 |           0.275 |
+| $\beta_2$   |           0.008 |           0.365 |
+| $\gamma$    |           0.003 |           0.226 |
+| $\sigma$    |           0.005 |           0.182 |
+| $\tau$      | $\pm\{1, 2\}$   |           0.000 |
 
 Acceptance rates for the continuous parameters fall within or close to the target range (0.20--0.50), indicating well-tuned proposal distributions.
 
