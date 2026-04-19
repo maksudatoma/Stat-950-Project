@@ -26,15 +26,15 @@ Department of Statistics, University of Nebraska--Lincoln, Lincoln, NE, United S
 
 # Abstract
 
-Change-point detection in nonlinear dynamical systems presents fundamental challenges for both statistical inference and computation.  
-This project investigates change-point detection in two nonlinear growth models: a logistic growth model and a Susceptible-Infected-Recovered (SIR) epidemic model.  
-For each model, we implement maximum likelihood estimation via profile likelihood search, parametric bootstrap, and Bayesian inference via Metropolis-within-Gibbs Markov chain Monte Carlo.  
-Simulation studies confirm that both models recover true parameters with negligible bias, and the change-point parameter is estimated with high accuracy under both inferential paradigms.  
+Change-point detection in nonlinear dynamical systems presents fundamental challenges for both statistical inference and computation.
+This project investigates change-point detection in two nonlinear growth models: a logistic growth model and a Susceptible-Infected-Recovered (SIR) epidemic model.
+For each model, we implement maximum likelihood estimation via profile likelihood search, parametric bootstrap, and Bayesian inference via Metropolis-within-Gibbs Markov chain Monte Carlo.
+Simulation studies confirm that both models recover true parameters with negligible bias, and the change-point parameter is estimated with high accuracy under both inferential paradigms.
 
-A key finding is that change-point identifiability differs fundamentally between the two models.  
-In the logistic model, the posterior for $\tau$ spreads across two adjacent values, while in the SIR model it collapses to a point mass at the true value, a consequence of the transmission rate change propagating through the entire coupled ODE system.  
-Bootstrap and Bayesian intervals show broadly consistent conclusions in both models, though differences in interval width reflect how each method captures uncertainty and parameter dependence, particularly in the SIR setting.  
-Computationally, the SIR model is substantially more expensive, requiring ODE solving at every likelihood evaluation and making estimation significantly slower than in the logistic case.  
+A key finding is that change-point identifiability differs fundamentally between the two models.
+In the logistic model, the posterior for $\tau$ spreads across two adjacent values, while in the SIR model it collapses to a point mass at the true value, a consequence of the transmission rate change propagating through the entire coupled ODE system.
+Bootstrap and Bayesian intervals show broadly consistent conclusions in both models, though differences in interval width reflect how each method captures uncertainty and parameter dependence, particularly in the SIR setting.
+Computationally, the SIR model is substantially more expensive, requiring ODE solving at every likelihood evaluation and making estimation significantly slower than in the logistic case.
 These results demonstrate that model mechanistic complexity has direct and quantifiable consequences for both inferential precision and computational cost.
 The entire code and details are accessible through this GitHub link: <https://github.com/maksudatoma/Stat-950-Project>
 
@@ -176,13 +176,11 @@ The model is highly effective at detecting the change-point, as evidenced by the
 
 Furthermore, the change-point model is preferred over the no-change model in all simulations based on AIC, demonstrating a strong ability to detect structural changes.
 
-**Move the graphs in appendix. Just write lil bit by of giving direrction to see appendix**\[**Fixed**\]
-
 The graphical results support the numerical findings.
 The estimated change-point values are concentrated near the true value, the growth-rate estimates are centered close to their targets, and the fitted change-point logistic model closely follows the true mean function.
 The profile likelihood also shows a clear minimum near the true change-point, indicating good identifiability.
 Supporting plots are provided in appendix.
-(@fig-hist; @fig-log)
+(@fig-hist; @fig-box; @fig-log; @fig-lik)
 
 ### 2.2.2 Parametric Bootstrap
 
@@ -301,16 +299,14 @@ Overall, the results demonstrate reliable parameter recovery and well-calibrated
 
 ![*Posterior density plots for all model parameters.*](post.png){#fig-post width="65%"}
 
-**Lil bit short write up \[Fixed!\]**
-
 @fig-post shows the marginal posterior distributions for all parameters.
 The posterior for $\sigma$ is the most precise and is centered close to the true value.
 The posteriors for $r_1$ and $K$ are slightly right-skewed, whereas $r_2$ and $t_0$ are mildly left-skewed, reflecting asymmetry in the likelihood.
 All true values fall within the 95% credible intervals, and the posterior for $\tau$ is concentrated mainly at 30 and 31, indicating precise change-point identification.
 
-### 2.3.2 Uncertainty Quantification
+**This part below does not appear in my pdf correctly**
 
-**Remove table 6\[Fixed!\]**
+### 2.3.2 Uncertainty Quantification
 
 ![Comparison of bootstrap confidence intervals and Bayesian credible intervals for all model parameters.](ci.png){#fig-ci width="65%"}
 
@@ -319,7 +315,8 @@ Both methods also estimate the change-point $\tau$ precisely, although the inter
 The widest uncertainty is for $K$, while $r_1$ is estimated more precisely than $r_2$.
 Overall, the two methods lead to consistent inferential conclusions.
 
-# 3. SIR (Susceptible Infected Recovered) Model
+
+# 3.SIR (Susceptible Infected Recovered) Model
 
 While the logistic growth model captures overall epidemic trends and change-points, it does not explicitly represent transmission dynamics.
 To address this, we extend the analysis to the Susceptible–Infected–Recovered (SIR) model, which provides a mechanistic description of disease spread.
@@ -364,8 +361,6 @@ $$
 $$ with mean function $g(t_i; \theta) = I(t_i),$
 
 where $S(t)$, $I(t)$, and $R(t)$ represent the number of susceptible, infected, and recovered individuals at time $t$, respectively, and the system is solved numerically using the appropriate transmission rate before and after the change-point.
-
-**Remove bullet points for the parameter interpretation \[Fixed!\]**
 
 **Parameter Interpretation:** Here, $N$ denotes the total population size, assumed known or fixed, and $\sigma^2 > 0$ is the measurement error variance.
 The epidemic parameters are $\beta > 0$, the transmission rate, and $\gamma > 0$, the recovery rate, with $1/\gamma$ representing the average infectious period.
@@ -412,7 +407,7 @@ The bootstrap distribution of $\hat{\tau}$ had mean 19.875 and standard deviatio
 
 **Table 8. 95% bootstrap confidence intervals**
 
-| Parameter |   2.5% |  97.5% |
+| Parameter |   Lower |  Upper |
 |-----------|-------:|-------:|
 | $\beta_1$ | 0.3799 | 0.4186 |
 | $\beta_2$ | 0.1001 | 0.2006 |
@@ -541,8 +536,6 @@ A central theme is that computational cost scales significantly with model compl
 
 ## 4.1 Runtime Comparison
 
-**Let's just write the general timeline without mentioning exact time period \[Fixed!\]** **make it one para**
-
 The most striking contrast is between the logistic and SIR MLE profile searches.
 For the logistic model, evaluating the likelihood over all candidate values of τ is very fast due to the closed-form mean function.
 In contrast, the SIR model requires solving a system of three coupled ODEs for each likelihood evaluation using deSolve, making the profile search substantially slower because of repeated numerical integration.
@@ -588,17 +581,13 @@ Finally, for MCMC tuning, starting from the MLEs and adjusting proposal standard
 
 \[**Read again and then might short at the very last**\]
 
-This study investigated change-point detection in two nonlinear dynamical systems—a logistic growth model and an SIR epidemic model—using both frequentist and Bayesian approaches.
+This study investigated change-point detection in two nonlinear dynamical systems, a logistic growth model and an SIR epidemic model using both frequentist and Bayesian approaches.
 Across both models, the results demonstrate that change-point models can accurately recover underlying parameters and identify structural changes when they are present.
 
 A key finding is the strong agreement between frequentist and Bayesian inference in the logistic model.
 Parameter estimates showed negligible bias, and bootstrap confidence intervals closely matched Bayesian credible intervals.
 This consistency suggests that, in settings with relatively simple model structure and highly informative data, both paradigms provide reliable and robust inference.
-
-In contrast, the SIR model reveals important differences.
-While parameter recovery remains accurate, uncertainty quantification differs more substantially between bootstrap and Bayesian approaches.
-The Bayesian framework better captures posterior dependence among parameters, leading to wider and more realistic uncertainty intervals in some cases.
-This highlights the importance of accounting for model-induced parameter correlations in mechanistic models.
+In contrast, the SIR model shows more nuanced differences. While parameter recovery remains accurate, bootstrap and Bayesian intervals are broadly similar but not identical. In particular, Bayesian intervals tend to be slightly wider for some parameters, reflecting their ability to capture posterior dependence and additional uncertainty. This highlights the importance of accounting for model-induced parameter correlations in mechanistic models.
 
 A central contribution of this work is the comparison of change-point identifiability across models.
 In the logistic model, the change-point posterior is concentrated but still exhibits small uncertainty, spreading across adjacent values.
@@ -628,11 +617,11 @@ Additionally, real data applications, multiple change-point extensions, and comp
 ::: {layout-ncol="2"}
 ![Estimated change-point values across simulations.](hist.png){#fig-hist}
 
-![Estimated growth rates across simulations.](box.png)
+![Estimated growth rates across simulations.](box.png){#fig-box}
 :::
 
 ::: {layout-ncol="2"}
 ![Fitted change-point logistic model compared to the true mean function.](logistic.jpeg){#fig-log}
 
-![Profile likelihood for the change-point parameter $\tau$.](pro_lik.jpeg)
+![Profile likelihood for the change-point parameter $\tau$.](pro_lik.jpeg){#fig-lik}
 :::
