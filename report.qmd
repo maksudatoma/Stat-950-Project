@@ -3,12 +3,11 @@ format:
   pdf:
     df-print: default
     fig-cap-location: bottom
-    fontsize: 10pt
+    fontsize: 9pt
     geometry: margin=1in
   html: default
 
 bibliography: refs.bib
-
 
 editor:
   markdown:
@@ -189,30 +188,9 @@ The model is highly effective at detecting the change-point, as evidenced by the
 
 Furthermore, the change-point model is preferred over the no-change model in all simulations based on AIC, demonstrating a strong ability to detect structural changes.
 
-::: {layout-ncol="2"}
-![*Estimated change-point values across simulations.*](hist.png)
+**Move the graphs in appendix. Just write lil bit by of giving direrction to see appendix**[**Fixed**]
 
-![*Estimated growth rates across simulations.*](box.png)
-:::
-
-The histogram shows that $\hat{\tau}$ is concentrated near the true value, while the boxplots indicate that both growth rates are well estimated, with slightly higher variability for $r_2$.
-
-::: {layout-ncol="2"}
-![*Fitted change-point logistic model compared to the true mean function.*](logistic.jpeg)
-
-![*Profile likelihood for the change-point parameter* $\tau$.](pro_lik.jpeg)
-:::
-
-The fitted model closely follows the true underlying curve across the full time range.
-The estimated change-point aligns closely with the true value, and the model successfully captures the shift in growth rate.
-Before the change-point, the curve exhibits a steeper slope corresponding to a higher growth rate.
-After the change-point, the slope decreases, indicating slower growth.
-This transition is well captured by the model.
-
-The profile likelihood plot shows the negative log-likelihood evaluated across candidate values of the change-point parameter $\tau$.
-The minimum of the curve corresponds to the estimated change-point, indicating the value of $\tau$ that best fits the data.
-The estimated $\tau$ is very close to the true value, demonstrating accurate detection of the change-point.
-The sharp curvature around the minimum suggests that the likelihood is sensitive to changes in $\tau$, indicating good identifiability and relatively low uncertainty in the estimate.
+The graphical results support the numerical findings. The estimated change-point values are concentrated near the true value, the growth-rate estimates are centered close to their targets, and the fitted change-point logistic model closely follows the true mean function. The profile likelihood also shows a clear minimum near the true change-point, indicating good identifiability. Supporting plots are provided in appendix. (@fig-hist; @fig-log)
 
 ### 2.2.2 Parametric Bootstrap
 
@@ -300,7 +278,7 @@ As a result, the component-wise random-walk sampler mixes more slowly, increasin
 
 ![*Trace plots for all model parameters following burn-in.*](trace.png){#fig-trace width="65%"}
 
-Trace plots (Figure 5) show stationarity with no drift, indicating convergence.
+@fig-trace shows stationarity with no drift, indicating convergence.
 Continuous parameters ($K$, $r_1$, $r_2$, $t_0$, $\sigma$) exhibit typical “fuzzy caterpillar” patterns, suggesting adequate mixing, and the true values lie within the sampled ranges.
 The trace for $\tau$ alternates mainly between 30 and 31, reflecting its discrete nature and strong identifiability.
 
@@ -331,33 +309,18 @@ Overall, the results demonstrate reliable parameter recovery and well-calibrated
 
 ![*Posterior density plots for all model parameters.*](post.png){#fig-post width="65%"}
 
-@fig-post shows the marginal posterior distributions for all parameters.
-The posterior for $\sigma$ is the most precise, nearly symmetric and centered very close to the true value (3.0).
-The posteriors for $r_1$ and $K$ exhibit slight right-skew, while $r_2$ and $t_0$ show mild left-skew, reflecting asymmetry in the likelihood.
-All true parameter values lie within the 95% credible intervals, indicating good coverage.
-The posterior for $\tau$ is sharply concentrated, with about 70% of its mass at 30 and most of the remainder at 31, confirming precise identification of the change-point.
+**Lil bit short write up [Fixed!]**
+
+@fig-post shows the marginal posterior distributions for all parameters. The posterior for $\sigma$ is the most precise and is centered close to the true value. The posteriors for $r_1$ and $K$ are slightly right-skewed, whereas $r_2$ and $t_0$ are mildly left-skewed, reflecting asymmetry in the likelihood. All true values fall within the 95% credible intervals, and the posterior for $\tau$ is concentrated mainly at 30 and 31, indicating precise change-point identification.
 
 ### 2.3.2 Uncertainty Quantification
 
-**Table 6 : Comparison of 95% bootstrap confidence intervals and 95% Bayesian credible intervals for all model parameters.**
+**Remove table 6[Fixed!]**
 
-| Parameter  | Boot. Lower | Boot. Upper | Bayes Lower | Bayes Upper |
-|------------|------------:|------------:|------------:|------------:|
-| $$\tau$$   |       28.98 |       31.00 |       30.00 |       31.00 |
-| $$K$$      |       92.18 |      115.87 |       93.05 |      115.39 |
-| $$r_1$$    |       0.187 |       0.240 |       0.191 |       0.235 |
-| $$r_2$$    |       0.035 |       0.083 |       0.037 |       0.077 |
-| $$t_0$$    |       24.46 |       26.90 |       24.57 |       26.88 |
-| $$\sigma$$ |        2.29 |        3.44 |        2.49 |        3.65 |
+![Comparison of bootstrap confidence intervals and Bayesian credible intervals for all model parameters.](ci.png){#fig-ci width="65%"}
 
-![*Comparison of bootstrap confidence intervals and Bayesian credible intervals*](ci.png){#fig-ci width="65%"}
+@fig-ci shows close agreement between the bootstrap and Bayesian intervals for all continuous parameters. Both methods also estimate the change-point $\tau$ precisely, although the intervals differ slightly because $\tau$ is discrete. The widest uncertainty is for $K$, while $r_1$ is estimated more precisely than $r_2$. Overall, the two methods lead to consistent inferential conclusions.
 
-The bootstrap confidence intervals and Bayesian credible intervals are in close agreement for all continuous parameters, with similar widths and substantial overlap, as expected under a highly informative likelihood.
-The main difference is for the change-point $\tau$: the bootstrap interval $(28,31)$ and Bayesian interval $(30,31)$ are both narrow and contain the true value, but differ slightly because $\tau$ is discrete and sensitive to data variability.
-The parameter $K$ has the widest intervals under both approaches, reflecting greater difficulty in estimating the logistic plateau, while $r_1$ is estimated more precisely than $r_2$ because more data are available before the change-point.
-Overall, the close agreement between the two methods suggests that the inferential conclusions are robust.
-
-\newpage
 
 # 3. SIR (Susceptible Infected Recovered) Model
 
@@ -405,31 +368,12 @@ $$ with mean function $g(t_i; \theta) = I(t_i),$
 
 where $S(t)$, $I(t)$, and $R(t)$ represent the number of susceptible, infected, and recovered individuals at time $t$, respectively, and the system is solved numerically using the appropriate transmission rate before and after the change-point.
 
-**Parameter Interpretation**
+**Remove bullet points for the parameter interpretation [Fixed!]**
 
-**General Parameters**
+**Parameter Interpretation:** Here, $N$ denotes the total population size, assumed known or fixed, and $\sigma^2 > 0$ is the measurement error variance. The epidemic parameters are $\beta > 0$, the transmission rate, and $\gamma > 0$, the recovery rate, with $1/\gamma$ representing the average infectious period. The change-point parameters are $\beta_1 > 0$ and $\beta_2 > 0$, the transmission rates before and after the change-point, respectively, and $\tau$, the time at which the transmission rate changes.
 
--   $N$: total population size (assumed known or fixed)
--   $\sigma^2 > 0$: variance of measurement error
+**Assumption:** The model assumes that the total population $N$ is fixed, the initial conditions $S(0)$, $I(0)$, and $R(0)$ are known, and a single change-point occurs in the transmission rate. Observations are collected at discrete time points and are assumed to have independent Gaussian noise.
 
-**Epidemic Parameters**
-
--   $\beta > 0$: transmission rate
--   $\gamma > 0$: recovery rate
--   $1 / \gamma$: average infectious period
-
-**Change-Point Parameters**
-
--   $\beta_1 > 0$: transmission rate before the change-point
--   $\beta_2 > 0$: transmission rate after the change-point
--   $\tau$: change-point at which the transmission rate changes
-
-The following assumptions are made:
-
--   The total population $N$ is fixed.
--   Initial conditions $S(0)$, $I(0)$, and $R(0)$ are known.
--   A single change-point occurs in the transmission rate.
--   Observations are collected at discrete time points with independent Gaussian noise.
 
 ## 3.1 Change-Point Estimation and Inference in the SIR Model (Frequentist Approach)
 
@@ -438,30 +382,15 @@ The following assumptions are made:
 Parameters of the change-point SIR model are estimated using a frequentist maximum likelihood framework.
 Under the assumption of Gaussian observation error, this is equivalent to minimizing the negative log-likelihood.
 
-The observed data are modeled as
-
-$$
-y_t = I(t; \theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0, \sigma^2),
-$$
-
-where $I(t; \theta)$ is the infected trajectory obtained from the SIR model.
-
 For a fixed candidate value of the change-point $\tau$, the parameters $(\beta_1, \beta_2, \gamma, \sigma)$ are estimated by minimizing the negative log-likelihood using optim() with the `L-BFGS-B` algorithm in R, where the SIR model is solved numerically via `ode()` from the `deSolve` package at each evaluation.
 Since $\tau$ is discrete, it is estimated by a grid search, and the final estimate $\hat{\tau}$ is chosen as the value that gives the smallest negative log-likelihood.
 
 ### 3.1.2 Simulation Study
 
-Data were generated from the SIR model with a true change-point using:
-
--   time points: $t = 0$ to $60$
--   true parameters: $\beta_1 = 0.40$, $\beta_2 = 0.15$, $\gamma = 0.10$, and $\tau = 20$
--   initial conditions: $S(0) = 0.999$, $I(0) = 0.001$, $R(0) = 0$
--   Gaussian noise with standard deviation $\sigma = 0.01$
+Data were generated from the SIR model for $t = 0,\ldots,60$ with true parameters $\beta_1 = 0.40$, $\beta_2 = 0.15$, $\gamma = 0.10$, and $\tau = 20$, initial conditions $S(0) = 0.999$, $I(0) = 0.001$, $R(0) = 0$, and Gaussian noise with standard deviation $\sigma = 0.01$.
 
 The estimation procedure was applied to each simulated dataset and repeated for 100 replications.
 Model performance was evaluated using bias, root mean squared error (RMSE), and change-point estimation accuracy.
-
-Simulation Results
 
 **Table 7 : Simulation Performance Metrics**
 
@@ -478,33 +407,19 @@ The recovery rate $\gamma$ is estimated with high precision, and the change-poin
 
 ### 3.1.3 Bootstrap Inference
 
-Bootstrap datasets were generated from the fitted SIR model by simulating from the estimated mean trajectory and adding Gaussian noise using the estimated error standard deviation.
-The change-point model was then refitted to each bootstrap dataset.
-This process was repeated for 200 bootstrap replications.
+Bootstrap datasets were generated from the fitted SIR model by simulating from the estimated mean trajectory and adding Gaussian noise with the estimated error standard deviation. The change-point model was then refitted to each bootstrap dataset, and this procedure was repeated for 200 bootstrap replications. The bootstrap distribution of $\hat{\tau}$ had mean 19.875 and standard deviation 0.6335.
 
-**Table 8 : Bootstrap Summary for Change-Point**
+**Table 8. 95\% bootstrap confidence intervals**
 
-| Statistic          |  Value |
-|--------------------|-------:|
-| Mean($\hat{\tau}$) | 19.875 |
-| SD($\hat{\tau}$)   | 0.6335 |
+| Parameter | 2.5\% | 97.5\% |
+|---|---:|---:|
+| $\beta_1$ | 0.3799 | 0.4186 |
+| $\beta_2$ | 0.1001 | 0.2006 |
+| $\gamma$  | 0.0866 | 0.1110 |
+| $\tau$    | 19.00 | 21.00 |
 
-**Table 9 : 95% Bootstrap Confidence interval**
+The bootstrap results indicate that the change-point is estimated stably and with good precision. All confidence intervals contain the true parameter values, and the interval for $\tau$ is relatively narrow. The slightly wider interval for $\beta_2$ reflects the greater difficulty of estimating post-change dynamics.
 
-| Parameter   |   2.5% |  97.5% |
-|-------------|-------:|-------:|
-| $$\beta_1$$ | 0.3799 | 0.4186 |
-| $$\beta_2$$ | 0.1001 | 0.2006 |
-| $$\gamma$$  | 0.0866 | 0.1110 |
-| $$\tau$$    |  19.00 |  21.00 |
-
-
-The bootstrap distribution of $\tau$ is tightly centered around the true value, indicating stable estimation. All confidence intervals contain the true parameter values. The interval for $\tau$ is relatively narrow, indicating precise estimation of the change-point.
-
-These results show that the change-point SIR model performs well in both estimation and inference.
-All parameters are recovered with low bias and variability, and the change-point $\tau$ is estimated accurately and consistently.
-The bootstrap procedure provides reliable confidence intervals, while the slightly higher variability in $\beta_2$ reflects the greater difficulty of estimating post-change dynamics.
-Overall, the estimation procedure is both numerically stable and statistically reliable under the simulation setting.
 
 ## 3.2 Bayesian Inference via Markov Chain Monte Carlo for the SIR Model
 
@@ -539,7 +454,7 @@ The sampler was run for 30,000 iterations, with 5,000 burn-in and thinning by a 
 
 **Convergence Diagnostics**
 
-**Table 10 : Proposal standard deviations and Metropolis acceptance rates for SIR model parameters.**
+**Table 9 : Proposal standard deviations and Metropolis acceptance rates for SIR model parameters.**
 
 | Parameter   |     Proposal SD | Acceptance Rate |
 |-------------|----------------:|----------------:|
@@ -557,15 +472,12 @@ Evaluation of the log-likelihood profile confirmed that the log-likelihood at $\
 Under the Metropolis criterion, the probability of accepting a move to any neighboring value is of order $e^{-55} \approx 10^{-24}$, rendering such transitions essentially impossible.
 The posterior for $\tau$ is therefore a degenerate point mass at $\tau = 20$, coinciding exactly with the true value.
 
-**Table 11: Effective sample sizes (ESS) for SIR model parameters after burn-in and thinning.**
+**Table 11. Effective sample sizes (ESS) for SIR model parameters after burn-in and thinning.** [**make this like table 4[Fixed! but can we just make description?]**]
 
-| Parameter   |            ESS |
-|-------------|---------------:|
-| $$\beta_1$$ |          \~150 |
-| $$\beta_2$$ |          \~100 |
-| $$\gamma$$  |          \~120 |
-| $$\sigma$$  |         \~1200 |
-| $$\tau$$    | 0 (point mass) |
+| $\beta_1$ | $\beta_2$ | $\gamma$ | $\sigma$ | $\tau$ |
+|----------:|----------:|---------:|---------:|:--------|
+| $\sim 150$ | $\sim 100$ | $\sim 120$ | $\sim 1200$ | 0 (point mass) |
+
 
 The parameter $\sigma$ achieves a high ESS, indicating efficient mixing and near-independent samples.
 In contrast, the transmission rates $\beta_1$, $\beta_2$, and the recovery rate $\gamma$ exhibit moderate ESS, reflecting slower mixing.
@@ -613,11 +525,12 @@ Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 3
 
 | Parameter | Boot. Lower | Boot. Upper | Bayes Lower | Bayes Upper |
 |-----------|------------:|------------:|------------:|------------:|
-| $\beta_1$ |      0.4096 |      0.4196 |      0.4006 |      0.4110 |
-| $\beta_2$ |      0.1669 |      0.1758 |      0.1495 |      0.1908 |
-| $\gamma$  |      0.1071 |      0.1080 |      0.0996 |      0.1106 |
+| $\beta_1$ |      0.3799 |      0.4186 |      0.4006 |      0.4110 |
+| $\beta_2$ |      0.1001 |      0.2006 |      0.1495 |      0.1908 |
+| $\gamma$  |      0.0866 |      0.1110 |      0.0996 |      0.1106 |
 
-**Table 9 values differ - need to change the interpretation below, abstract and discussion**
+**Table 9 values differ - need to change the interpretation below, abstract and discussion! Yes. fix the value in table 13 from 9 and then change the write up in abstract [Changed the boot lower and upper value here. Not the writing part yet]**
+
 
 For $\beta_1$, both approaches produce narrow, overlapping intervals, indicating consistent estimation.
 For $\beta_2$, the Bayesian credible interval $(0.1495, 0.1908)$ is much wider than the bootstrap interval $(0.1669, 0.1758)$, suggesting that the bootstrap may underestimate uncertainty in the post-change transmission rate.
@@ -631,14 +544,10 @@ A central theme is that computational cost scales significantly with model compl
 
 ## 4.1 Runtime Comparison
 
-Runtime comparisons show a clear increase in computational cost from the logistic model to the SIR model.
-For the logistic model, the MLE profile search is essentially instantaneous, the parametric bootstrap takes about 30 seconds, and MCMC takes about 3 minutes.
-In contrast, the SIR model is much more expensive: the profile search takes 52 seconds, the bootstrap requires about 3 hours, and MCMC takes about 205 seconds.
+**Let's just write the general timeline without mentioning exact time period [Fixed!]**
+**make it one para**
 
-The largest difference appears in the MLE profile search.
-The logistic model is fast because its mean function is available in closed form, whereas the SIR model requires numerical solution of the ODE system at each likelihood evaluation, leading to roughly a 50--100 fold increase in cost.
-The SIR MCMC is also slower because each iteration requires repeated ODE solves, while the logistic MCMC avoids this burden.
-Overall, the results show that moving from a closed-form model to an ODE-based model substantially increases computational expense.
+The most striking contrast is between the logistic and SIR MLE profile searches. For the logistic model, evaluating the likelihood over all candidate values of τ is very fast due to the closed-form mean function. In contrast, the SIR model requires solving a system of three coupled ODEs for each likelihood evaluation using deSolve, making the profile search substantially slower because of repeated numerical integration. The SIR MCMC is also much more computationally intensive than the logistic case. Each iteration involves multiple ODE solves from the Metropolis-within-Gibbs updates, whereas the logistic MCMC avoids numerical integration entirely and is therefore considerably faster. 
 
 ## 4.2 Numerical Stability
 
@@ -677,6 +586,8 @@ Finally, for MCMC tuning, starting from the MLEs and adjusting proposal standard
 
 # 5. Discussion
 
+[**Read again and then might short at the very last**]
+
 This study investigated change-point detection in two nonlinear dynamical systems—a logistic growth model and an SIR epidemic model—using both frequentist and Bayesian approaches. Across both models, the results demonstrate that change-point models can accurately recover underlying parameters and identify structural changes when they are present.
 
 A key finding is the strong agreement between frequentist and Bayesian inference in the logistic model. Parameter estimates showed negligible bias, and bootstrap confidence intervals closely matched Bayesian credible intervals. This consistency suggests that, in settings with relatively simple model structure and highly informative data, both paradigms provide reliable and robust inference.
@@ -690,9 +601,25 @@ From a computational perspective, model complexity plays a critical role. The lo
 Overall, the results demonstrate that both inferential accuracy and computational cost depend strongly on model structure. Simpler models allow for fast and stable inference with agreement across methods, while more mechanistic models improve identifiability but introduce greater computational and inferential complexity.
 Additionally, real data applications, multiple change-point extensions, and comparison with probabilistic programming frameworks such as Stan remain promising avenues for extending this analysis.
 
+**At very last might put Dixon's paper in appropriate place**
+
 # References
 
 ::: {#refs}
 :::
 
+# Appendix
 
+## Additional Logistic Model Figures
+
+::: {layout-ncol=2}
+![Estimated change-point values across simulations.](hist.png){#fig-hist}
+
+![Estimated growth rates across simulations.](box.png)
+:::
+
+::: {layout-ncol=2}
+![Fitted change-point logistic model compared to the true mean function.](logistic.jpeg){#fig-log}
+
+![Profile likelihood for the change-point parameter $\tau$.](pro_lik.jpeg)
+:::
