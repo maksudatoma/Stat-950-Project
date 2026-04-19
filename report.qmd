@@ -34,8 +34,8 @@ Simulation studies confirm that both models recover true parameters with negligi
 
 A key finding is that change-point identifiability differs fundamentally between the two models.
 In the logistic model, the posterior for $\tau$ spreads across two adjacent values, while in the SIR model it collapses to a point mass at the true value, a consequence of the transmission rate change propagating through the entire coupled ODE system.
-Bootstrap and Bayesian credible intervals agree closely for the logistic model but diverge in the SIR model, where Bayesian intervals better capture posterior correlation among epidemic parameters.
-Computationally, the SIR model is substantially more expensive, requiring ODE solving at every likelihood evaluation and making the profile search approximately 50--100 times slower than the logistic equivalent.
+Bootstrap and Bayesian credible intervals agree closely for the logistic model but are less aligned in the SIR setting, where Bayesian intervals better capture posterior correlation among epidemic parameters.
+Computationally, the SIR model is substantially more expensive, requiring ODE solving at every likelihood evaluation and making estimation significantly slower than in the logistic case.
 These results demonstrate that model mechanistic complexity has direct and quantifiable consequences for both inferential precision and computational cost.
 The entire code and details are accessible through this GitHub link: <https://github.com/maksudatoma/Stat-950-Project>
 
@@ -605,7 +605,7 @@ Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 3
 
 ![*SIR model fitted trajectory.*](SIR.png){#fig-sir width="65%"}
 
-Figure 11 shows that the posterior fit closely matches both the observed data and the true trajectory, indicating a good model fit. The change-point is correctly identified around  $\tau = 20$, capturing the peak and subsequent decline of the epidemic.
+@fig-sir shows that the posterior fit closely matches both the observed data and the true trajectory, indicating a good model fit. The change-point is correctly identified around  $\tau = 20$, capturing the peak and subsequent decline of the epidemic.
 
 ### 3.2.2 Uncertainty Quantification: Bootstrap vs. Bayesian
 
@@ -617,6 +617,7 @@ Figure 11 shows that the posterior fit closely matches both the observed data an
 | $\beta_2$ |      0.1669 |      0.1758 |      0.1495 |      0.1908 |
 | $\gamma$  |      0.1071 |      0.1080 |      0.0996 |      0.1106 |
 
+**Table 9 values differ - need to change the interpretation below, abstract and discussion**
 
 For $\beta_1$, both approaches produce narrow, overlapping intervals, indicating consistent estimation.
 For $\beta_2$, the Bayesian credible interval $(0.1495, 0.1908)$ is much wider than the bootstrap interval $(0.1669, 0.1758)$, suggesting that the bootstrap may underestimate uncertainty in the post-change transmission rate.
