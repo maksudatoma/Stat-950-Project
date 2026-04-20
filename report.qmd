@@ -26,8 +26,6 @@ Department of Statistics, University of Nebraska--Lincoln, Lincoln, NE, United S
 
 # Abstract
 
-**Shall we keep the font size 10 ?? - size 9 looks too small[Yes!]** 
-
 Change-point detection in nonlinear dynamical systems presents fundamental challenges for both statistical inference and computation.
 This project investigates change-point detection in two nonlinear growth models: a logistic growth model and a Susceptible-Infected-Recovered (SIR) epidemic model.
 For each model, we implement maximum likelihood estimation via profile likelihood search, parametric bootstrap, and Bayesian inference via Metropolis-within-Gibbs Markov chain Monte Carlo.
@@ -257,7 +255,7 @@ The discrete parameter $\tau$ had an acceptance rate of 0.016, which is expected
 
 
 
-**Table 4: Effective sample sizes (ESS) for each parameter after burn-in and thinning. [Instead of table we can just describe it, right?**
+**Table 4: Effective sample sizes (ESS) for each parameter after burn-in and thinning. [Instead of table we can just describe it, right? - I think table looks more clear(just a idea)**
 
 | $$K$$ | $$r_1$$ | $$r_2$$ | $$t_0$$ | $$\sigma$$ | $$\tau$$ |
 |------:|--------:|--------:|--------:|-----------:|---------:|
@@ -516,6 +514,8 @@ Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 3
 
 ![*SIR model fitted trajectory.*](SIR.png){#fig-sir width="65%"}
 
+**this part does not appear in my pdf (may be a formatting issue)**
+
 @fig-sir shows that the posterior fit closely matches both the observed data and the true trajectory, indicating a good model fit.
 The change-point is correctly identified around $\tau = 20$, capturing the peak and subsequent decline of the epidemic.
 
@@ -579,8 +579,6 @@ Finally, for MCMC tuning, starting from the MLEs and adjusting proposal standard
 
 # 5. Discussion
 
-\[**Read again and then might short at the very last**\]
-
 This study investigated change-point detection in two nonlinear dynamical systems, a logistic growth model and an SIR epidemic model using both frequentist and Bayesian approaches.
 Across both models, the results demonstrate that change-point models can accurately recover underlying parameters and identify structural changes when they are present.
 
@@ -603,7 +601,7 @@ Overall, the results demonstrate that both inferential accuracy and computationa
 Simpler models allow for fast and stable inference with agreement across methods, while more mechanistic models improve identifiability but introduce greater computational and inferential complexity.
 Additionally, real data applications, multiple change-point extensions, and comparison with probabilistic programming frameworks such as Stan remain promising avenues for extending this analysis.
 
-**At very last might put Dixon's paper in appropriate place [Actually neither paper is related to our work. should we need any more reference?**
+**At very last might put Dixon's paper in appropriate place [Actually neither paper is related to our work. should we need any more reference? - I think this is enough**
 
 # References
 
