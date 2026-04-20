@@ -3,7 +3,7 @@ format:
   pdf:
     df-print: default
     fig-cap-location: bottom
-    fontsize: 9pt
+    fontsize: 10pt
     geometry: margin=1in
   html: default
 
@@ -25,6 +25,8 @@ Department of Statistics, University of Nebraska--Lincoln, Lincoln, NE, United S
 \end{center}
 
 # Abstract
+
+**Shall we keep the font size 10 ?? - size 9 looks too small**
 
 Change-point detection in nonlinear dynamical systems presents fundamental challenges for both statistical inference and computation.
 This project investigates change-point detection in two nonlinear growth models: a logistic growth model and a Susceptible-Infected-Recovered (SIR) epidemic model.
@@ -191,8 +193,6 @@ The change-point model was then refitted to each bootstrap sample, and the resul
 In this study, 200 bootstrap replications were used.
 Bootstrap distributions were used to construct 95% confidence intervals for all parameters, including the change-point.
 
-**Bootstrap Results**
-
 **Table 2: Bootstrap 95% confidence intervals.**
 
 | Parameter | Lower |  Upper |
@@ -304,11 +304,10 @@ The posterior for $\sigma$ is the most precise and is centered close to the true
 The posteriors for $r_1$ and $K$ are slightly right-skewed, whereas $r_2$ and $t_0$ are mildly left-skewed, reflecting asymmetry in the likelihood.
 All true values fall within the 95% credible intervals, and the posterior for $\tau$ is concentrated mainly at 30 and 31, indicating precise change-point identification.
 
-**This part below does not appear in my pdf correctly**
 
 ### 2.3.2 Uncertainty Quantification
 
-![Comparison of bootstrap confidence intervals and Bayesian credible intervals for all model parameters.](ci.png){#fig-ci width="65%"}
+![*Comparison of bootstrap confidence intervals and Bayesian credible intervals for all model parameters.*](ci.png){#fig-ci width="65%"}
 
 @fig-ci shows close agreement between the bootstrap and Bayesian intervals for all continuous parameters.
 Both methods also estimate the change-point $\tau$ precisely, although the intervals differ slightly because $\tau$ is discrete.
@@ -525,14 +524,10 @@ The change-point is correctly identified around $\tau = 20$, capturing the peak 
 | $\beta_2$ |      0.1001 |      0.2006 |      0.1495 |      0.1908 |
 | $\gamma$  |      0.0866 |      0.1110 |      0.0996 |      0.1106 |
 
-**Table 9 values differ - need to change the interpretation below, abstract and discussion! Yes. fix the value in table 13 from 9 and then change the write up in abstract \[Changed the boot lower and upper value here and the writing part in abstract as well\]**
 
 For $\beta_1$, both approaches produce narrow, overlapping intervals, indicating consistent estimation.For $\beta_2$, the Bayesian credible interval $(0.1495, 0.1908)$ is much narrower than the bootstrap interval $(0.1001, 0.2006)$, suggesting that the Bayesian approach may underestimate uncertainty in the post-change transmission rate.For $\gamma$, the pattern is reversed: the bootstrap interval $(0.0866, 0.1110)$ is wider than the Bayesian interval $(0.0996, 0.1106)$, indicating greater uncertainty in the bootstrap estimate for this dataset.
 
 # 4. Computational Considerations
-
-This section summarizes the computational behavior of all methods applied in this project, covering runtime, numerical stability, mixing efficiency, and practical recommendations.
-A central theme is that computational cost scales significantly with model complexity; methods that are fast and well-behaved for the logistic model become substantially more expensive and harder to tune for the SIR model.
 
 ## 4.1 Runtime Comparison
 
