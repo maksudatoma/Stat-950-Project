@@ -26,7 +26,7 @@ Department of Statistics, University of Nebraska--Lincoln, Lincoln, NE, United S
 
 # Abstract
 
-**Shall we keep the font size 10 ?? - size 9 looks too small**
+**Shall we keep the font size 10 ?? - size 9 looks too small[Yes!]** 
 
 Change-point detection in nonlinear dynamical systems presents fundamental challenges for both statistical inference and computation.
 This project investigates change-point detection in two nonlinear growth models: a logistic growth model and a Susceptible-Infected-Recovered (SIR) epidemic model.
@@ -34,7 +34,7 @@ For each model, we implement maximum likelihood estimation via profile likelihoo
 Simulation studies confirm that both models recover true parameters with negligible bias, and the change-point parameter is estimated with high accuracy under both inferential paradigms.
 
 A key finding is that change-point identifiability differs fundamentally between the two models.
-In the logistic model, the posterior for $\tau$ spreads across two adjacent values, while in the SIR model it collapses to a point mass at the true value, a consequence of the transmission rate change propagating through the entire coupled ODE system.
+In the logistic model, the posterior for $\tau$ spreads across two adjacent values, while in the SIR model it collapses to a point mass at the true value, a consequence of the transmission rate change propagating through the entire coupled ODE(ordinary differential equation) system.
 Bootstrap and Bayesian intervals show broadly consistent conclusions in both models, though differences in interval width reflect how each method captures uncertainty and parameter dependence, particularly in the SIR setting.
 Computationally, the SIR model is substantially more expensive, requiring ODE solving at every likelihood evaluation and making estimation significantly slower than in the logistic case.
 These results demonstrate that model mechanistic complexity has direct and quantifiable consequences for both inferential precision and computational cost.
@@ -255,11 +255,16 @@ The sampler is run for 50,000 iterations, with 5,000 burn-in and thinning by 10,
 Acceptance rates for all continuous parameters fell within the target range (Table 3).
 The discrete parameter $\tau$ had an acceptance rate of 0.016, which is expected given the strong concentration of posterior mass at $\tau = 30$; the chain rarely proposes a move to a different value because the data strongly support the true change-point.
 
-**Table 4: Effective sample sizes (ESS) for each parameter after burn-in and thinning.**
+
+
+**Table 4: Effective sample sizes (ESS) for each parameter after burn-in and thinning. [Instead of table we can just describe it, right?**
 
 | $$K$$ | $$r_1$$ | $$r_2$$ | $$t_0$$ | $$\sigma$$ | $$\tau$$ |
 |------:|--------:|--------:|--------:|-----------:|---------:|
 |    46 |     107 |      49 |      54 |       2594 |      387 |
+
+
+**The effective sample sizes after burn-in and thinning were 46 for $K$, 107 for $r_1$, 49 for $r_2$, 54 for $t_0$, 2594 for $\sigma$, and 387 for $\tau$.**
 
 The parameters $\sigma$ and $\tau$ show high ESS, indicating efficient mixing and near-independent samples.
 In contrast, $K$, $r_1$, $r_2$, and $t_0$ have lower ESS due to strong posterior dependence.
@@ -598,7 +603,7 @@ Overall, the results demonstrate that both inferential accuracy and computationa
 Simpler models allow for fast and stable inference with agreement across methods, while more mechanistic models improve identifiability but introduce greater computational and inferential complexity.
 Additionally, real data applications, multiple change-point extensions, and comparison with probabilistic programming frameworks such as Stan remain promising avenues for extending this analysis.
 
-**At very last might put Dixon's paper in appropriate place**
+**At very last might put Dixon's paper in appropriate place [Actually neither paper is related to our work. should we need any more reference?**
 
 # References
 
