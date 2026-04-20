@@ -366,7 +366,7 @@ where $S(t)$, $I(t)$, and $R(t)$ represent the number of susceptible, infected, 
 The epidemic parameters are $\beta > 0$, the transmission rate, and $\gamma > 0$, the recovery rate, with $1/\gamma$ representing the average infectious period.
 The change-point parameters are $\beta_1 > 0$ and $\beta_2 > 0$, the transmission rates before and after the change-point, respectively, and $\tau$, the time at which the transmission rate changes.
 
-**Assumption:** The model assumes that the total population $N$ is fixed, the initial conditions $S(0)$, $I(0)$, and $R(0)$ are known, and a single change-point occurs in the transmission rate.
+**Assumptions:** The model assumes that the total population $N$ is fixed, the initial conditions $S(0)$, $I(0)$, and $R(0)$ are known, and a single change-point occurs in the transmission rate.
 Observations are collected at discrete time points and are assumed to have independent Gaussian noise.
 
 ## 3.1 Change-Point Estimation and Inference in the SIR Model (Frequentist Approach)
@@ -469,7 +469,7 @@ Evaluation of the log-likelihood profile confirmed that the log-likelihood at $\
 Under the Metropolis criterion, the probability of accepting a move to any neighboring value is of order $e^{-55} \approx 10^{-24}$, rendering such transitions essentially impossible.
 The posterior for $\tau$ is therefore a degenerate point mass at $\tau = 20$, coinciding exactly with the true value.
 
-**Table 11. Effective sample sizes (ESS) for SIR model parameters after burn-in and thinning.** \[**make this like table 4**
+**Table 11. Effective sample sizes (ESS) for SIR model parameters after burn-in and thinning.**
 
 |  $\beta_1$ |  $\beta_2$ |   $\gamma$ |    $\sigma$ | $\tau$         |
 |-----------:|-----------:|-----------:|------------:|:---------------|
