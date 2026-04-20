@@ -264,18 +264,20 @@ In contrast, $K$, $r_1$, $r_2$, and $t_0$ have lower ESS due to strong posterior
 This arises from the nonlinear logistic structure, where these parameters jointly control the curve shape and induce posterior correlations.
 As a result, the component-wise random-walk sampler mixes more slowly, increasing autocorrelation and reducing ESS.
 
-![*Trace plots for all model parameters following burn-in.*](trace.png){#fig-trace width="65%"}
-
 @fig-trace shows stationarity with no drift, indicating convergence.
 Continuous parameters ($K$, $r_1$, $r_2$, $t_0$, $\sigma$) exhibit typical “fuzzy caterpillar” patterns, suggesting adequate mixing, and the true values lie within the sampled ranges.
 The trace for $\tau$ alternates mainly between 30 and 31, reflecting its discrete nature and strong identifiability.
 
-![*Autocorrelation function (ACF) plots for all model parameters after thinning by a factor of 10.*](ACF.png){#fig-acf width="65%"}
+![*Trace plots for all model parameters following burn-in.*](trace.png){#fig-trace width="65%"}
 
 @fig-acf shows the ACF plots after thinning.
 The parameters $\sigma$ and $\tau$ exhibit rapid decay, indicating efficient mixing, while $K$, $r_1$, $r_2$, and $t_0$ show persistent autocorrelation, reflecting strong posterior dependence.
 This is consistent with their lower ESS values compared to $\sigma$ and $\tau$.
 Despite this, posterior means and medians remain reliable.
+
+![*Autocorrelation function (ACF) plots for all model parameters after thinning by a factor of 10.*](ACF.png){#fig-acf width="65%"}
+
+
 
 **Posterior Summary**
 
@@ -304,6 +306,7 @@ All true values fall within the 95% credible intervals, and the posterior for $\
 
 ### 2.3.2 Uncertainty Quantification
 
+
 ![*Comparison of bootstrap confidence intervals and Bayesian credible intervals for all model parameters.*](ci.png){#fig-ci width="65%"}
 
 @fig-ci shows close agreement between the bootstrap and Bayesian intervals for all continuous parameters.
@@ -311,6 +314,8 @@ Both methods also estimate the change-point $\tau$ precisely, although the inter
 The widest uncertainty is for $K$, while $r_1$ is estimated more precisely than $r_2$.
 Overall, the two methods lead to consistent inferential conclusions.
 
+
+\newpage
 # 3.SIR (Susceptible Infected Recovered) Model
 
 While the logistic growth model captures overall epidemic trends and change-points, it does not explicitly represent transmission dynamics.
@@ -507,8 +512,6 @@ Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 3
 
 ![*SIR model fitted trajectory.*](SIR.png){#fig-sir width="65%"}
 
-**this part does not appear in my pdf (may be a formatting issue): I'm getting an error when rendering so can't check this**
-
 @fig-sir shows that the posterior fit closely matches both the observed data and the true trajectory, indicating a good model fit.
 The change-point is correctly identified around $\tau = 20$, capturing the peak and subsequent decline of the epidemic.
 
@@ -601,6 +604,7 @@ Additionally, real data applications, multiple change-point extensions, and comp
 ::: {#refs}
 :::
 
+\newpage
 # Appendix
 
 ## Additional Logistic Model Figures
