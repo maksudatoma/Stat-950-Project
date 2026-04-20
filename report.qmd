@@ -253,16 +253,11 @@ The sampler is run for 50,000 iterations, with 5,000 burn-in and thinning by 10,
 Acceptance rates for all continuous parameters fell within the target range (Table 3).
 The discrete parameter $\tau$ had an acceptance rate of 0.016, which is expected given the strong concentration of posterior mass at $\tau = 30$; the chain rarely proposes a move to a different value because the data strongly support the true change-point.
 
-
-
-**Table 4: Effective sample sizes (ESS) for each parameter after burn-in and thinning. [Instead of table we can just describe it, right? - I think table looks more clear(just a idea)**
+**Table 4: Effective sample sizes (ESS) for each parameter after burn-in and thinning.**
 
 | $$K$$ | $$r_1$$ | $$r_2$$ | $$t_0$$ | $$\sigma$$ | $$\tau$$ |
 |------:|--------:|--------:|--------:|-----------:|---------:|
 |    46 |     107 |      49 |      54 |       2594 |      387 |
-
-
-**The effective sample sizes after burn-in and thinning were 46 for $K$, 107 for $r_1$, 49 for $r_2$, 54 for $t_0$, 2594 for $\sigma$, and 387 for $\tau$.**
 
 The parameters $\sigma$ and $\tau$ show high ESS, indicating efficient mixing and near-independent samples.
 In contrast, $K$, $r_1$, $r_2$, and $t_0$ have lower ESS due to strong posterior dependence.
@@ -307,7 +302,6 @@ The posterior for $\sigma$ is the most precise and is centered close to the true
 The posteriors for $r_1$ and $K$ are slightly right-skewed, whereas $r_2$ and $t_0$ are mildly left-skewed, reflecting asymmetry in the likelihood.
 All true values fall within the 95% credible intervals, and the posterior for $\tau$ is concentrated mainly at 30 and 31, indicating precise change-point identification.
 
-
 ### 2.3.2 Uncertainty Quantification
 
 ![*Comparison of bootstrap confidence intervals and Bayesian credible intervals for all model parameters.*](ci.png){#fig-ci width="65%"}
@@ -316,7 +310,6 @@ All true values fall within the 95% credible intervals, and the posterior for $\
 Both methods also estimate the change-point $\tau$ precisely, although the intervals differ slightly because $\tau$ is discrete.
 The widest uncertainty is for $K$, while $r_1$ is estimated more precisely than $r_2$.
 Overall, the two methods lead to consistent inferential conclusions.
-
 
 # 3.SIR (Susceptible Infected Recovered) Model
 
@@ -409,7 +402,7 @@ The bootstrap distribution of $\hat{\tau}$ had mean 19.875 and standard deviatio
 
 **Table 8. 95% bootstrap confidence intervals**
 
-| Parameter |   Lower |  Upper |
+| Parameter |  Lower |  Upper |
 |-----------|-------:|-------:|
 | $\beta_1$ | 0.3799 | 0.4186 |
 | $\beta_2$ | 0.1001 | 0.2006 |
@@ -471,7 +464,7 @@ Evaluation of the log-likelihood profile confirmed that the log-likelihood at $\
 Under the Metropolis criterion, the probability of accepting a move to any neighboring value is of order $e^{-55} \approx 10^{-24}$, rendering such transitions essentially impossible.
 The posterior for $\tau$ is therefore a degenerate point mass at $\tau = 20$, coinciding exactly with the true value.
 
-**Table 11. Effective sample sizes (ESS) for SIR model parameters after burn-in and thinning.** \[**make this like table 4\[Fixed! but can we just make description?\]**\]
+**Table 11. Effective sample sizes (ESS) for SIR model parameters after burn-in and thinning.** \[**make this like table 4**
 
 |  $\beta_1$ |  $\beta_2$ |   $\gamma$ |    $\sigma$ | $\tau$         |
 |-----------:|-----------:|-----------:|------------:|:---------------|
@@ -514,7 +507,7 @@ Unlike the logistic model, where the posterior for $\tau$ spread across 30 and 3
 
 ![*SIR model fitted trajectory.*](SIR.png){#fig-sir width="65%"}
 
-**this part does not appear in my pdf (may be a formatting issue)**
+**this part does not appear in my pdf (may be a formatting issue): I'm getting an error when rendering so can't check this**
 
 @fig-sir shows that the posterior fit closely matches both the observed data and the true trajectory, indicating a good model fit.
 The change-point is correctly identified around $\tau = 20$, capturing the peak and subsequent decline of the epidemic.
@@ -528,7 +521,6 @@ The change-point is correctly identified around $\tau = 20$, capturing the peak 
 | $\beta_1$ |      0.3799 |      0.4186 |      0.4006 |      0.4110 |
 | $\beta_2$ |      0.1001 |      0.2006 |      0.1495 |      0.1908 |
 | $\gamma$  |      0.0866 |      0.1110 |      0.0996 |      0.1106 |
-
 
 For $\beta_1$, both approaches produce narrow, overlapping intervals, indicating consistent estimation.For $\beta_2$, the Bayesian credible interval $(0.1495, 0.1908)$ is much narrower than the bootstrap interval $(0.1001, 0.2006)$, suggesting that the Bayesian approach may underestimate uncertainty in the post-change transmission rate.For $\gamma$, the pattern is reversed: the bootstrap interval $(0.0866, 0.1110)$ is wider than the Bayesian interval $(0.0996, 0.1106)$, indicating greater uncertainty in the bootstrap estimate for this dataset.
 
@@ -585,7 +577,10 @@ Across both models, the results demonstrate that change-point models can accurat
 A key finding is the strong agreement between frequentist and Bayesian inference in the logistic model.
 Parameter estimates showed negligible bias, and bootstrap confidence intervals closely matched Bayesian credible intervals.
 This consistency suggests that, in settings with relatively simple model structure and highly informative data, both paradigms provide reliable and robust inference.
-In contrast, the SIR model shows more nuanced differences. While parameter recovery remains accurate, bootstrap and Bayesian intervals are broadly similar but not identical. In particular, Bayesian intervals tend to be slightly wider for some parameters, reflecting their ability to capture posterior dependence and additional uncertainty. This highlights the importance of accounting for model-induced parameter correlations in mechanistic models.
+In contrast, the SIR model shows more nuanced differences.
+While parameter recovery remains accurate, bootstrap and Bayesian intervals are broadly similar but not identical.
+In particular, Bayesian intervals tend to be slightly wider for some parameters, reflecting their ability to capture posterior dependence and additional uncertainty.
+This highlights the importance of accounting for model-induced parameter correlations in mechanistic models.
 
 A central contribution of this work is the comparison of change-point identifiability across models.
 In the logistic model, the change-point posterior is concentrated but still exhibits small uncertainty, spreading across adjacent values.
@@ -600,8 +595,6 @@ Despite this, Bayesian MCMC remains competitive in the SIR setting, as it amorti
 Overall, the results demonstrate that both inferential accuracy and computational cost depend strongly on model structure.
 Simpler models allow for fast and stable inference with agreement across methods, while more mechanistic models improve identifiability but introduce greater computational and inferential complexity.
 Additionally, real data applications, multiple change-point extensions, and comparison with probabilistic programming frameworks such as Stan remain promising avenues for extending this analysis.
-
-**At very last might put Dixon's paper in appropriate place [Actually neither paper is related to our work. should we need any more reference? - I think this is enough**
 
 # References
 
