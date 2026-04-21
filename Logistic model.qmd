@@ -1,0 +1,919 @@
+---
+title: "Analysis"
+format: pdf
+editor: visual
+---
+
+```{r}
+# =========================================================
+# LOGISTIC CHANGE-POINT PROJECT
+# =========================================================
+
+rm(list = ls())
+
+set.seed(123)
+
+# =========================================================
+# 1. TRUE PARAMETER VALUES
+# =========================================================
+n          <- 60
+K_true     <- 100
+t0_true    <- 25
+r1_true    <- 0.22
+r2_true    <- 0.06
+tau_true   <- 30
+sigma_true <- 3
+
+candidate_tau <- 8:(n - 8)
+
+# =========================================================
+# 2. MODEL FUNCTIONS
+# =========================================================
+
+# No-change logistic mean
+logistic_mean_no_cp <- function(t, K, r, t0) {
+  K / (1 + exp(-r * (t - t0)))
+}
+
+# Change-point logistic mean
+logistic_mean_cp <- function(t, K, r1, r2, t0, tau) {
+  ifelse(
+    t <= tau,
+    K / (1 + exp(-r1 * (t - t0))),
+    K / (1 + exp(-r2 * (t - t0)))
+  )
+}
+
+# Negative log-likelihood: no-change model
+nll_no_cp <- function(par, t, y) {
+  K     <- par[1]
+  r     <- par[2]
+  t0    <- par[3]
+  sigma <- par[4]
+  
+  if (K <= 0 || r <= 0 || sigma <= 0) return(1e12)
+  
+  mu <- logistic_mean_no_cp(t, K, r, t0)
+  -sum(dnorm(y, mean = mu, sd = sigma, log = TRUE))
+}
+
+# Negative log-likelihood: change-point model
+nll_cp <- function(par, t, y, tau) {
+  K     <- par[1]
+  r1    <- par[2]
+  r2    <- par[3]
+  t0    <- par[4]
+  sigma <- par[5]
+  
+  if (K <= 0 || r1 <= 0 || r2 <= 0 || sigma <= 0) return(1e12)
+  
+  mu <- logistic_mean_cp(t, K, r1, r2, t0, tau)
+  -sum(dnorm(y, mean = mu, sd = sigma, log = TRUE))
+}
+
+# =========================================================
+# 3. HELPER FUNCTIONS FOR FITTING
+# =========================================================
+
+fit_no_change_model <- function(t, y) {
+  start_no <- c(
+    K = max(y),
+    r = 0.1,
+    t0 = median(t),
+    sigma = sd(y)
+  )
+  
+  fit_no <- try(
+    optim(
+      par = start_no,
+      fn = nll_no_cp,
+      t = t,
+      y = y,
+      method = "L-BFGS-B",
+      lower = c(1e-3, 1e-4, min(t), 1e-3),
+      upper = c(1e5, 5, max(t), 1e3)
+    ),
+    silent = TRUE
+  )
+  
+  if (inherits(fit_no, "try-error")) return(NULL)
+  
+  par_no <- fit_no$par
+  names(par_no) <- c("K", "r", "t0", "sigma")
+  
+  logLik_no <- -fit_no$value
+  AIC_no <- 2 * length(par_no) - 2 * logLik_no
+  
+  mu_hat_no <- logistic_mean_no_cp(
+    t  = t,
+    K  = par_no["K"],
+    r  = par_no["r"],
+    t0 = par_no["t0"]
+  )
+  
+  list(
+    fit = fit_no,
+    par = par_no,
+    logLik = logLik_no,
+    AIC = AIC_no,
+    fitted = mu_hat_no
+  )
+}
+
+fit_change_point_model <- function(t, y, candidate_tau) {
+  cp_profile <- data.frame(
+    tau = candidate_tau,
+    nll = NA_real_
+  )
+  
+  cp_fits <- vector("list", length(candidate_tau))
+  
+  for (i in seq_along(candidate_tau)) {
+    tau_i <- candidate_tau[i]
+    
+    start_cp <- c(
+      K = max(y),
+      r1 = 0.15,
+      r2 = 0.08,
+      t0 = median(t),
+      sigma = sd(y)
+    )
+    
+    fit_i <- try(
+      optim(
+        par = start_cp,
+        fn = nll_cp,
+        t = t,
+        y = y,
+        tau = tau_i,
+        method = "L-BFGS-B",
+        lower = c(1e-3, 1e-4, 1e-4, min(t), 1e-3),
+        upper = c(1e5, 5, 5, max(t), 1e3)
+      ),
+      silent = TRUE
+    )
+    
+    if (!inherits(fit_i, "try-error")) {
+      cp_profile$nll[i] <- fit_i$value
+      cp_fits[[i]] <- fit_i
+    }
+  }
+  
+  if (all(is.na(cp_profile$nll))) return(NULL)
+  
+  best_idx <- which.min(cp_profile$nll)
+  tau_hat <- cp_profile$tau[best_idx]
+  best_fit <- cp_fits[[best_idx]]
+  
+  if (is.null(best_fit)) return(NULL)
+  
+  par_cp <- best_fit$par
+  names(par_cp) <- c("K", "r1", "r2", "t0", "sigma")
+  
+  logLik_cp <- -best_fit$value
+  AIC_cp <- 2 * (length(par_cp) + 1) - 2 * logLik_cp
+  
+  mu_hat_cp <- logistic_mean_cp(
+    t   = t,
+    K   = par_cp["K"],
+    r1  = par_cp["r1"],
+    r2  = par_cp["r2"],
+    t0  = par_cp["t0"],
+    tau = tau_hat
+  )
+  
+  list(
+    tau_hat = tau_hat,
+    par = par_cp,
+    fit = best_fit,
+    logLik = logLik_cp,
+    AIC = AIC_cp,
+    fitted = mu_hat_cp,
+    profile = cp_profile
+  )
+}
+
+# =========================================================
+# 4. SIMULATION STUDY
+# =========================================================
+
+nsim <- 100
+
+sim_results <- data.frame(
+  sim = 1:nsim,
+  K_hat_no = NA_real_,
+  r_hat_no = NA_real_,
+  t0_hat_no = NA_real_,
+  sigma_hat_no = NA_real_,
+  logLik_no = NA_real_,
+  AIC_no = NA_real_,
+  
+  tau_hat = NA_real_,
+  K_hat_cp = NA_real_,
+  r1_hat_cp = NA_real_,
+  r2_hat_cp = NA_real_,
+  t0_hat_cp = NA_real_,
+  sigma_hat_cp = NA_real_,
+  logLik_cp = NA_real_,
+  AIC_cp = NA_real_,
+  
+  tau_correct = NA,
+  cp_better_AIC = NA
+)
+
+for (s in 1:nsim) {
+  t <- 1:n
+  
+  mu_true <- ifelse(
+    t <= tau_true,
+    K_true / (1 + exp(-r1_true * (t - t0_true))),
+    K_true / (1 + exp(-r2_true * (t - t0_true)))
+  )
+  
+  y <- mu_true + rnorm(n, mean = 0, sd = sigma_true)
+  
+  fit_no <- fit_no_change_model(t, y)
+  fit_cp <- fit_change_point_model(t, y, candidate_tau)
+  
+  if (!is.null(fit_no)) {
+    sim_results$K_hat_no[s]     <- fit_no$par["K"]
+    sim_results$r_hat_no[s]     <- fit_no$par["r"]
+    sim_results$t0_hat_no[s]    <- fit_no$par["t0"]
+    sim_results$sigma_hat_no[s] <- fit_no$par["sigma"]
+    sim_results$logLik_no[s]    <- fit_no$logLik
+    sim_results$AIC_no[s]       <- fit_no$AIC
+  }
+  
+  if (!is.null(fit_cp)) {
+    sim_results$tau_hat[s]       <- fit_cp$tau_hat
+    sim_results$K_hat_cp[s]      <- fit_cp$par["K"]
+    sim_results$r1_hat_cp[s]     <- fit_cp$par["r1"]
+    sim_results$r2_hat_cp[s]     <- fit_cp$par["r2"]
+    sim_results$t0_hat_cp[s]     <- fit_cp$par["t0"]
+    sim_results$sigma_hat_cp[s]  <- fit_cp$par["sigma"]
+    sim_results$logLik_cp[s]     <- fit_cp$logLik
+    sim_results$AIC_cp[s]        <- fit_cp$AIC
+    
+    sim_results$tau_correct[s]   <- abs(fit_cp$tau_hat - tau_true) <= 2
+    
+    if (!is.null(fit_no) && !is.na(fit_no$AIC)) {
+      sim_results$cp_better_AIC[s] <- fit_cp$AIC < fit_no$AIC
+    }
+  }
+  
+  if (s %% 10 == 0) {
+    cat("Finished simulation", s, "of", nsim, "\n")
+  }
+}
+
+# -----------------------------
+# Simulation summary
+# -----------------------------
+valid <- complete.cases(sim_results[, c(
+  "tau_hat", "K_hat_cp", "r1_hat_cp", "r2_hat_cp", "t0_hat_cp", "sigma_hat_cp"
+)])
+res <- sim_results[valid, ]
+
+summary_table <- data.frame(
+  Parameter = c("K", "r1", "r2", "t0", "tau"),
+  True = c(K_true, r1_true, r2_true, t0_true, tau_true),
+  Mean_Estimate = c(
+    mean(res$K_hat_cp, na.rm = TRUE),
+    mean(res$r1_hat_cp, na.rm = TRUE),
+    mean(res$r2_hat_cp, na.rm = TRUE),
+    mean(res$t0_hat_cp, na.rm = TRUE),
+    mean(res$tau_hat, na.rm = TRUE)
+  ),
+  Bias = c(
+    mean(res$K_hat_cp, na.rm = TRUE) - K_true,
+    mean(res$r1_hat_cp, na.rm = TRUE) - r1_true,
+    mean(res$r2_hat_cp, na.rm = TRUE) - r2_true,
+    mean(res$t0_hat_cp, na.rm = TRUE) - t0_true,
+    mean(res$tau_hat, na.rm = TRUE) - tau_true
+  ),
+  RMSE = c(
+    sqrt(mean((res$K_hat_cp - K_true)^2, na.rm = TRUE)),
+    sqrt(mean((res$r1_hat_cp - r1_true)^2, na.rm = TRUE)),
+    sqrt(mean((res$r2_hat_cp - r2_true)^2, na.rm = TRUE)),
+    sqrt(mean((res$t0_hat_cp - t0_true)^2, na.rm = TRUE)),
+    sqrt(mean((res$tau_hat - tau_true)^2, na.rm = TRUE))
+  )
+)
+
+cat("\n================ SIMULATION SUMMARY ================\n")
+print(summary_table)
+
+cat("\nProportion tau estimated within ±2 of truth: ",
+    mean(res$tau_correct, na.rm = TRUE), "\n", sep = "")
+
+cat("Proportion CP model better by AIC: ",
+    mean(res$cp_better_AIC, na.rm = TRUE), "\n", sep = "")
+
+# -----------------------------
+# Simulation plots
+# -----------------------------
+hist(res$tau_hat,
+     breaks = 20,
+     main = expression("Distribution of " * hat(tau)),
+     xlab = expression(hat(tau)))
+abline(v = tau_true, lty = 2)
+
+boxplot(res$r1_hat_cp, res$r2_hat_cp,
+        names = c(expression(hat(r)[1]), expression(hat(r)[2])),
+        main = "Estimated growth rates")
+abline(h = r1_true, lty = 2)
+abline(h = r2_true, lty = 3)
+
+# =========================================================
+# 5. FIT ONE DATASET FOR BOOTSTRAP
+# =========================================================
+
+set.seed(999)
+
+t <- 1:n
+
+mu_true_one <- ifelse(
+  t <= tau_true,
+  K_true / (1 + exp(-r1_true * (t - t0_true))),
+  K_true / (1 + exp(-r2_true * (t - t0_true)))
+)
+
+y_one <- mu_true_one + rnorm(n, mean = 0, sd = sigma_true)
+
+dat <- data.frame(
+  t = t,
+  y = y_one,
+  mu_true = mu_true_one
+)
+
+fit_no_one <- fit_no_change_model(dat$t, dat$y)
+fit_cp_one <- fit_change_point_model(dat$t, dat$y, candidate_tau)
+
+if (is.null(fit_cp_one)) {
+  stop("Change-point model failed on the bootstrap dataset.")
+}
+
+tau_hat <- fit_cp_one$tau_hat
+par_cp  <- fit_cp_one$par
+mu_hat_cp <- fit_cp_one$fitted
+
+cat("\n================ ONE-DATASET FIT ================\n")
+cat("Estimated tau:", tau_hat, "\n")
+print(par_cp)
+
+# Plot one dataset fit
+plot(dat$t, dat$y, pch = 16,
+     xlab = "Time", ylab = "Observed response",
+     main = "One dataset: true mean and fitted change-point model")
+lines(dat$t, dat$mu_true, lwd = 2, lty = 2)
+lines(dat$t, mu_hat_cp, lwd = 2)
+abline(v = tau_true, lty = 2)
+abline(v = tau_hat, lty = 3)
+
+legend("bottomright",
+       legend = c("Observed data", "True mean", "Fitted CP mean",
+                  "True tau", "Estimated tau"),
+       pch = c(16, NA, NA, NA, NA),
+       lty = c(NA, 2, 1, 2, 3),
+       lwd = c(NA, 2, 2, 1, 1),
+       bty = "n")
+
+# Profile plot for one dataset
+plot(fit_cp_one$profile$tau, fit_cp_one$profile$nll,
+     type = "b", pch = 16,
+     xlab = expression(tau),
+     ylab = "Negative log-likelihood",
+     main = "Profile over candidate change-points")
+abline(v = tau_true, lty = 2)
+abline(v = tau_hat, lty = 3)
+
+# =========================================================
+# 6. PARAMETRIC BOOTSTRAP FOR ONE FITTED DATASET
+# =========================================================
+
+set.seed(456)
+
+B <- 200
+
+boot_results <- data.frame(
+  b = 1:B,
+  tau_hat = NA_real_,
+  K_hat = NA_real_,
+  r1_hat = NA_real_,
+  r2_hat = NA_real_,
+  t0_hat = NA_real_,
+  sigma_hat = NA_real_
+)
+
+mu_fitted <- logistic_mean_cp(
+  t = dat$t,
+  K = par_cp["K"],
+  r1 = par_cp["r1"],
+  r2 = par_cp["r2"],
+  t0 = par_cp["t0"],
+  tau = tau_hat
+)
+
+sigma_fitted <- par_cp["sigma"]
+
+for (b in 1:B) {
+  y_boot <- mu_fitted + rnorm(n, mean = 0, sd = sigma_fitted)
+  
+  fit_boot <- fit_change_point_model(dat$t, y_boot, candidate_tau)
+  
+  if (!is.null(fit_boot)) {
+    boot_results$tau_hat[b]   <- fit_boot$tau_hat
+    boot_results$K_hat[b]     <- fit_boot$par["K"]
+    boot_results$r1_hat[b]    <- fit_boot$par["r1"]
+    boot_results$r2_hat[b]    <- fit_boot$par["r2"]
+    boot_results$t0_hat[b]    <- fit_boot$par["t0"]
+    boot_results$sigma_hat[b] <- fit_boot$par["sigma"]
+  }
+  
+  if (b %% 20 == 0) {
+    cat("Finished bootstrap", b, "of", B, "\n")
+  }
+}
+
+boot_valid <- boot_results[complete.cases(boot_results), ]
+
+boot_ci <- function(x) {
+  quantile(x, probs = c(0.025, 0.975), na.rm = TRUE)
+}
+
+ci_table <- data.frame(
+  Parameter = c("tau", "K", "r1", "r2", "t0", "sigma"),
+  Lower = c(
+    boot_ci(boot_valid$tau_hat)[1],
+    boot_ci(boot_valid$K_hat)[1],
+    boot_ci(boot_valid$r1_hat)[1],
+    boot_ci(boot_valid$r2_hat)[1],
+    boot_ci(boot_valid$t0_hat)[1],
+    boot_ci(boot_valid$sigma_hat)[1]
+  ),
+  Upper = c(
+    boot_ci(boot_valid$tau_hat)[2],
+    boot_ci(boot_valid$K_hat)[2],
+    boot_ci(boot_valid$r1_hat)[2],
+    boot_ci(boot_valid$r2_hat)[2],
+    boot_ci(boot_valid$t0_hat)[2],
+    boot_ci(boot_valid$sigma_hat)[2]
+  )
+)
+
+cat("\n================ BOOTSTRAP 95% CIs ================\n")
+print(ci_table)
+
+# Bootstrap plots
+hist(boot_valid$tau_hat,
+     breaks = 20,
+     main = expression("Bootstrap of " * hat(tau)),
+     xlab = expression(hat(tau)))
+abline(v = tau_hat, lty = 2)
+
+boxplot(boot_valid$r1_hat, boot_valid$r2_hat,
+        names = c(expression(hat(r)[1]), expression(hat(r)[2])),
+        main = "Bootstrap distributions of growth rates")
+
+# =========================================================
+# 7. OPTIONAL: SAVE OUTPUTS
+# =========================================================
+# saveRDS(sim_results, "simulation_results_logistic_cp.rds")
+# saveRDS(boot_results, "bootstrap_results_logistic_cp.rds")
+```
+
+```{r}
+# =========================================================
+# SECTION: BAYESIAN INFERENCE VIA METROPOLIS-WITHIN-GIBBS
+# =========================================================
+
+# ---------------------------------------------------------
+# LOG-PRIOR: returns 0 if all params in bounds, -Inf if not
+# This encodes Uniform priors on each parameter
+# ---------------------------------------------------------
+log_prior <- function(K, r1, r2, t0, sigma, tau) {
+  if (K     < 50    || K     > 300)  return(-Inf)
+  if (r1    < 0.001 || r1    > 2)    return(-Inf)
+  if (r2    < 0.001 || r2    > 2)    return(-Inf)
+  if (t0    < 1     || t0    > 60)   return(-Inf)
+  if (sigma < 0.1   || sigma > 20)   return(-Inf)
+  if (!(tau %in% candidate_tau))     return(-Inf)
+  return(0)  # log(1) = 0 for uniform prior within bounds
+}
+
+# ---------------------------------------------------------
+# LOG-LIKELIHOOD: Gaussian log-likelihood for CP model
+# ---------------------------------------------------------
+log_likelihood_cp <- function(K, r1, r2, t0, sigma, tau, t, y) {
+  mu <- logistic_mean_cp(t, K, r1, r2, t0, tau)
+  sum(dnorm(y, mean = mu, sd = sigma, log = TRUE))
+}
+
+# ---------------------------------------------------------
+# LOG-POSTERIOR: log-prior + log-likelihood
+# ---------------------------------------------------------
+log_posterior <- function(K, r1, r2, t0, sigma, tau, t, y) {
+  lp <- log_prior(K, r1, r2, t0, sigma, tau)
+  if (!is.finite(lp)) return(-Inf)  # reject immediately if out of bounds
+  lp + log_likelihood_cp(K, r1, r2, t0, sigma, tau, t, y)
+}
+
+# ---------------------------------------------------------
+# METROPOLIS-WITHIN-GIBBS SAMPLER
+# ---------------------------------------------------------
+# Arguments:
+#   y, t        : data
+#   init        : named list of starting values
+#   n_iter      : total number of MCMC iterations
+#   proposal_sd : named list of proposal standard deviations
+#                 (tuning parameters - controls step size)
+# ---------------------------------------------------------
+
+run_mcmc <- function(y, t, init, n_iter = 12000,
+                     proposal_sd = list(K=3, r1=0.01, r2=0.01,
+                                        t0=0.5, sigma=0.2)) {
+  
+  # Storage matrix: rows = iterations, cols = parameters
+  chain <- matrix(NA, nrow = n_iter, ncol = 6)
+  colnames(chain) <- c("K", "r1", "r2", "t0", "sigma", "tau")
+  
+  # Initialize
+  K_cur     <- init$K
+  r1_cur    <- init$r1
+  r2_cur    <- init$r2
+  t0_cur    <- init$t0
+  sigma_cur <- init$sigma
+  tau_cur   <- init$tau
+  
+  # Current log-posterior
+  lp_cur <- log_posterior(K_cur, r1_cur, r2_cur, t0_cur,
+                          sigma_cur, tau_cur, t, y)
+  
+  # Track acceptance counts for diagnostics
+  accept_count <- rep(0, 6)
+  names(accept_count) <- c("K", "r1", "r2", "t0", "sigma", "tau")
+  
+  cat("Starting MCMC...\n")
+  
+  for (i in 1:n_iter) {
+    
+    # ---- Update K ----
+    K_prop <- K_cur + rnorm(1, 0, proposal_sd$K)
+    lp_prop <- log_posterior(K_prop, r1_cur, r2_cur, t0_cur,
+                             sigma_cur, tau_cur, t, y)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      K_cur  <- K_prop
+      lp_cur <- lp_prop
+      accept_count["K"] <- accept_count["K"] + 1
+    }
+    
+    # ---- Update r1 ----
+    r1_prop <- r1_cur + rnorm(1, 0, proposal_sd$r1)
+    lp_prop <- log_posterior(K_cur, r1_prop, r2_cur, t0_cur,
+                             sigma_cur, tau_cur, t, y)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      r1_cur <- r1_prop
+      lp_cur <- lp_prop
+      accept_count["r1"] <- accept_count["r1"] + 1
+    }
+    
+    # ---- Update r2 ----
+    r2_prop <- r2_cur + rnorm(1, 0, proposal_sd$r2)
+    lp_prop <- log_posterior(K_cur, r1_cur, r2_prop, t0_cur,
+                             sigma_cur, tau_cur, t, y)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      r2_cur <- r2_prop
+      lp_cur <- lp_prop
+      accept_count["r2"] <- accept_count["r2"] + 1
+    }
+    
+    # ---- Update t0 ----
+    t0_prop <- t0_cur + rnorm(1, 0, proposal_sd$t0)
+    lp_prop <- log_posterior(K_cur, r1_cur, r2_cur, t0_prop,
+                             sigma_cur, tau_cur, t, y)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      t0_cur <- t0_prop
+      lp_cur <- lp_prop
+      accept_count["t0"] <- accept_count["t0"] + 1
+    }
+    
+    # ---- Update sigma ----
+    sigma_prop <- sigma_cur + rnorm(1, 0, proposal_sd$sigma)
+    lp_prop <- log_posterior(K_cur, r1_cur, r2_cur, t0_cur,
+                             sigma_prop, tau_cur, t, y)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      sigma_cur <- sigma_prop
+      lp_cur    <- lp_prop
+      accept_count["sigma"] <- accept_count["sigma"] + 1
+    }
+    
+    # ---- Update tau (discrete) ----
+    # Propose a jump of -2, -1, +1, or +2 with equal probability
+    jump     <- sample(c(-2, -1, 1, 2), size = 1)
+    tau_prop <- tau_cur + jump
+    lp_prop  <- log_posterior(K_cur, r1_cur, r2_cur, t0_cur,
+                              sigma_cur, tau_prop, t, y)
+    if (log(runif(1)) < lp_prop - lp_cur) {
+      tau_cur <- tau_prop
+      lp_cur  <- lp_prop
+      accept_count["tau"] <- accept_count["tau"] + 1
+    }
+    
+    # Store current state
+    chain[i, ] <- c(K_cur, r1_cur, r2_cur, t0_cur, sigma_cur, tau_cur)
+    
+    # Progress update
+    if (i %% 2000 == 0) cat("  Iteration", i, "of", n_iter, "\n")
+  }
+  
+  cat("Done.\n\n")
+  cat("Acceptance rates:\n")
+  print(round(accept_count / n_iter, 3))
+  
+  list(chain = chain, accept_rate = accept_count / n_iter)
+}
+```
+
+```{r}
+# ---------------------------------------------------------
+# RUN MCMC ON THE ONE FITTED DATASET (dat$t, dat$y)
+# Use MLE estimates as starting values - this is good practice
+# as it starts the chain near the posterior mode
+# ---------------------------------------------------------
+
+set.seed(2024)
+
+init_vals <- list(
+  K     = as.numeric(par_cp["K"]),
+  r1    = as.numeric(par_cp["r1"]),
+  r2    = as.numeric(par_cp["r2"]),
+  t0    = as.numeric(par_cp["t0"]),
+  sigma = as.numeric(par_cp["sigma"]),
+  tau   = tau_hat
+)
+
+# --------------------------------------------------------
+# RERUN with longer chain + thinning
+# Run 50,000 iterations, discard 5000 burnin, thin by 10
+# Final result: ~4500 nearly independent samples
+# --------------------------------------------------------
+set.seed(2024)
+
+mcmc_long <- run_mcmc(
+  y           = dat$y,
+  t           = dat$t,
+  init        = init_vals,
+  n_iter      = 50000,
+  proposal_sd = list(
+    K     = 4,
+    r1    = 0.025,
+    r2    = 0.008,
+    t0    = 1.0,
+    sigma = 0.8
+  )
+)
+
+# Burnin + thinning
+burnin_long  <- 5000
+thin_by      <- 10
+raw_post     <- mcmc_long$chain[(burnin_long + 1):50000, ]
+thin_idx     <- seq(1, nrow(raw_post), by = thin_by)
+chain_post   <- raw_post[thin_idx, ]   # overwrites chain_post
+
+cat("Acceptance rates:\n")
+print(round(mcmc_long$accept_rate, 3))
+cat("\nSamples after burnin + thinning:", nrow(chain_post), "\n")
+
+# ESS check
+ess_final <- effectiveSize(chain_post)
+cat("\n==== ESS AFTER THINNING ====\n")
+print(round(ess_final, 0))
+
+# ---------------------------------------------------------
+# TRACE PLOTS - most important diagnostic
+# A good chain looks like "fuzzy caterpillar" - no trends,
+# no getting stuck, mixing well around a stable mean
+# ---------------------------------------------------------
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+param_names  <- c("K", "r1", "r2", "t0", "sigma", "tau")
+true_vals    <- c(K_true, r1_true, r2_true, t0_true, sigma_true, tau_true)
+param_labels <- c("K", expression(r[1]), expression(r[2]),
+                  expression(t[0]), expression(sigma), expression(tau))
+
+for (j in 1:6) {
+  plot(chain_post[, j],
+       type = "l",
+       col  = "steelblue",
+       xlab = "Post-burnin iteration",
+       ylab = param_labels[[j]],
+       main = paste("Trace:", param_names[j]))
+  abline(h = true_vals[j], col = "red", lty = 2, lwd = 2)
+}
+
+par(mfrow = c(1, 1))
+
+# ---------------------------------------------------------
+# AUTOCORRELATION PLOTS
+# Low autocorrelation = chain is mixing well (efficient)
+# High autocorrelation = chain moves slowly, may need more
+# iterations or larger proposal steps
+# ---------------------------------------------------------
+library(coda)
+ess_vals <- effectiveSize(chain_post)
+cat("\n================ EFFECTIVE SAMPLE SIZE ================\n")
+print(round(ess_vals, 0))
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:6) {
+  acf(chain_post[, j],
+      main = paste("ACF:", param_names[j]),
+      col  = "steelblue",
+      lag.max = 50)
+}
+
+par(mfrow = c(1, 1))
+
+# ---------------------------------------------------------
+# POSTERIOR SUMMARY TABLE (fixed)
+# ---------------------------------------------------------
+post_mean   <- apply(chain_post, 2, mean)
+post_median <- apply(chain_post, 2, median)
+post_lower  <- apply(chain_post, 2, quantile, probs = 0.025)
+post_upper  <- apply(chain_post, 2, quantile, probs = 0.975)
+
+posterior_summary <- data.frame(
+  Parameter   = param_names,
+  True_Value  = true_vals,
+  Post_Mean   = as.numeric(post_mean),
+  Post_Median = as.numeric(post_median),
+  Lower_95    = as.numeric(post_lower),
+  Upper_95    = as.numeric(post_upper)
+)
+
+
+
+# ---------------------------------------------------------
+# POSTERIOR DENSITY PLOTS with true value marked
+# ---------------------------------------------------------
+
+par(mfrow = c(3, 2), mar = c(4, 4, 2, 1))
+
+for (j in 1:6) {
+  
+  # tau is discrete - use a bar plot instead of density
+  if (param_names[j] == "tau") {
+    tau_table <- table(chain_post[, j])
+    barplot(tau_table / sum(tau_table),
+            main = expression("Posterior of " * tau),
+            xlab = expression(tau),
+            ylab = "Probability",
+            col  = "steelblue",
+            border = "white")
+    abline(v = which(names(tau_table) == as.character(tau_true)) - 0.5,
+           col = "red", lty = 2, lwd = 2)
+  } else {
+    d <- density(chain_post[, j])
+    plot(d,
+         main = paste("Posterior:", param_names[j]),
+         xlab = param_labels[[j]],
+         col  = "steelblue",
+         lwd  = 2)
+    # Shade 95% credible interval
+    ci_lo <- quantile(chain_post[, j], 0.025)
+    ci_hi <- quantile(chain_post[, j], 0.975)
+    x_shade <- d$x[d$x >= ci_lo & d$x <= ci_hi]
+    y_shade <- d$y[d$x >= ci_lo & d$x <= ci_hi]
+    polygon(c(x_shade, rev(x_shade)),
+            c(y_shade, rep(0, length(y_shade))),
+            col = adjustcolor("steelblue", alpha.f = 0.3),
+            border = NA)
+    abline(v = true_vals[j], col = "red",    lty = 2, lwd = 2)
+    abline(v = mean(chain_post[, j]), col = "darkblue", lty = 1, lwd = 1)
+    legend("topright",
+           legend = c("True value", "Posterior mean", "95% CI"),
+           col    = c("red", "darkblue", "steelblue"),
+           lty    = c(2, 1, NA),
+           fill   = c(NA, NA, adjustcolor("steelblue", 0.3)),
+           border = c(NA, NA, NA),
+           bty    = "n", cex = 0.8)
+  }
+}
+
+par(mfrow = c(1, 1))
+
+# ---------------------------------------------------------
+# COMPARISON TABLE: Bootstrap CI vs Posterior Credible Interval (fixed)
+# ---------------------------------------------------------
+
+boot_lower <- as.numeric(c(
+  quantile(boot_valid$tau_hat,   0.025),
+  quantile(boot_valid$K_hat,     0.025),
+  quantile(boot_valid$r1_hat,    0.025),
+  quantile(boot_valid$r2_hat,    0.025),
+  quantile(boot_valid$t0_hat,    0.025),
+  quantile(boot_valid$sigma_hat, 0.025)
+))
+
+boot_upper <- as.numeric(c(
+  quantile(boot_valid$tau_hat,   0.975),
+  quantile(boot_valid$K_hat,     0.975),
+  quantile(boot_valid$r1_hat,    0.975),
+  quantile(boot_valid$r2_hat,    0.975),
+  quantile(boot_valid$t0_hat,    0.975),
+  quantile(boot_valid$sigma_hat, 0.975)
+))
+
+bayes_lower <- as.numeric(c(
+  quantile(chain_post[, "tau"],   0.025),
+  quantile(chain_post[, "K"],     0.025),
+  quantile(chain_post[, "r1"],    0.025),
+  quantile(chain_post[, "r2"],    0.025),
+  quantile(chain_post[, "t0"],    0.025),
+  quantile(chain_post[, "sigma"], 0.025)
+))
+
+bayes_upper <- as.numeric(c(
+  quantile(chain_post[, "tau"],   0.975),
+  quantile(chain_post[, "K"],     0.975),
+  quantile(chain_post[, "r1"],    0.975),
+  quantile(chain_post[, "r2"],    0.975),
+  quantile(chain_post[, "t0"],    0.975),
+  quantile(chain_post[, "sigma"], 0.975)
+))
+
+comparison_table <- data.frame(
+  Parameter   = c("tau", "K", "r1", "r2", "t0", "sigma"),
+  Boot_Lower  = boot_lower,
+  Boot_Upper  = boot_upper,
+  Bayes_Lower = bayes_lower,
+  Bayes_Upper = bayes_upper
+)
+
+# Print comparison table without round() on the whole frame
+cat("\n===== BOOTSTRAP vs BAYESIAN CREDIBLE INTERVALS =====\n")
+comparison_table[, -1] <- round(comparison_table[, -1], 4)
+print(comparison_table)
+```
+
+```{r}
+# --------------------------------------------------------
+# CI COMPARISON PLOT — displays in RStudio plot panel
+# --------------------------------------------------------
+
+par(mar = c(5, 5, 3, 2))
+
+params_plot <- c("K", "r1", "r2", "t0", "sigma")
+true_plot   <- c(K_true, r1_true, r2_true, t0_true, sigma_true)
+
+boot_lo <- c(quantile(boot_valid$K_hat,     0.025),
+             quantile(boot_valid$r1_hat,    0.025),
+             quantile(boot_valid$r2_hat,    0.025),
+             quantile(boot_valid$t0_hat,    0.025),
+             quantile(boot_valid$sigma_hat, 0.025))
+
+boot_hi <- c(quantile(boot_valid$K_hat,     0.975),
+             quantile(boot_valid$r1_hat,    0.975),
+             quantile(boot_valid$r2_hat,    0.975),
+             quantile(boot_valid$t0_hat,    0.975),
+             quantile(boot_valid$sigma_hat, 0.975))
+
+bayes_lo <- as.numeric(apply(chain_post[, c("K","r1","r2","t0","sigma")],
+                              2, quantile, 0.025))
+bayes_hi <- as.numeric(apply(chain_post[, c("K","r1","r2","t0","sigma")],
+                              2, quantile, 0.975))
+
+boot_lo_sc  <- (boot_lo  - true_plot) / true_plot * 100
+boot_hi_sc  <- (boot_hi  - true_plot) / true_plot * 100
+bayes_lo_sc <- (bayes_lo - true_plot) / true_plot * 100
+bayes_hi_sc <- (bayes_hi - true_plot) / true_plot * 100
+
+plot(NULL, xlim = c(0.5, 5.5), ylim = c(-60, 60),
+     xaxt = "n", xlab = "Parameter",
+     ylab = "% deviation from true value",
+     main = "Bootstrap CI vs Bayesian Credible Interval")
+axis(1, at = 1:5,
+     labels = c("K", expression(r[1]), expression(r[2]),
+                expression(t[0]), expression(sigma)))
+abline(h = 0, lty = 2, col = "red", lwd = 2)
+abline(h = seq(-60, 60, 20), lty = 3, col = "gray85", lwd = 0.8)
+
+for (j in 1:5) {
+  lines(c(j - 0.15, j - 0.15), c(boot_lo_sc[j],  boot_hi_sc[j]),
+        lwd = 4, col = "steelblue")
+  points(j - 0.15, (boot_lo_sc[j] + boot_hi_sc[j]) / 2,
+         pch = 19, cex = 1.2, col = "steelblue")
+  lines(c(j + 0.15, j + 0.15), c(bayes_lo_sc[j], bayes_hi_sc[j]),
+        lwd = 4, col = "darkorange")
+  points(j + 0.15, (bayes_lo_sc[j] + bayes_hi_sc[j]) / 2,
+         pch = 19, cex = 1.2, col = "darkorange")
+}
+
+legend("topright",
+       legend = c("Bootstrap 95% CI", "Bayesian 95% CI", "True value"),
+       col    = c("steelblue", "darkorange", "red"),
+       lty    = c(1, 1, 2), lwd = c(3, 3, 2),
+       pch    = c(19, 19, NA), bty = "n")
+```
