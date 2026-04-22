@@ -1,0 +1,135 @@
+% ============================================================
+%  UNL Combined Style
+%  Combines: nav-bar (pic1) + title page (pic2) + footer (pic3)
+% ============================================================
+
+\usepackage{xcolor}
+
+% ── UNL Brand Colors ────────────────────────────────────────
+\definecolor{unlscarlet}{HTML}{D00000}
+\definecolor{unlcream}{HTML}{F2EFE8}
+\definecolor{unlgray}{HTML}{5C5C5C}
+
+% ── Base theme: no default decorations ─────────────────────
+\usetheme{default}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+
+% ── TOP navigation bar with section tabs + progress dots ───
+%    This is the key feature from Screenshot 1
+\useoutertheme[subsection=false]{miniframes}
+\setbeamercolor{section in head/foot}{bg=unlscarlet, fg=white}
+\setbeamerfont{section in head/foot}{size=\tiny, series=\bfseries}
+% Dot colors: filled = visited, empty = upcoming
+\setbeamercolor{mini frame}{fg=white, bg=unlscarlet}
+\setbeamercolor{mini frame in current section}{fg=white, bg=unlscarlet}
+\setbeamercolor{mini frame in other section}{fg=unlscarlet!40, bg=white}
+
+% ── Frametitle: scarlet bar, white bold text (pic 1 & 3) ───
+\setbeamercolor{frametitle}{bg=unlscarlet, fg=white}
+\setbeamerfont{frametitle}{size=\normalsize, series=\bfseries}
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \begin{beamercolorbox}[wd=\paperwidth, ht=0.6cm, dp=0.15cm,
+      leftskip=0.5cm]{frametitle}
+    \usebeamerfont{frametitle}\insertframetitle
+  \end{beamercolorbox}
+}
+
+% ── Structure / bullet color ────────────────────────────────
+\setbeamercolor{structure}{fg=unlscarlet}
+\setbeamercolor{itemize item}{fg=unlscarlet}
+\setbeamercolor{itemize subitem}{fg=unlscarlet}
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+
+% ── Block colors ────────────────────────────────────────────
+\setbeamercolor{block title}{bg=unlscarlet, fg=white}
+\setbeamercolor{block body}{bg=unlcream, fg=black}
+
+% ── Title page: scarlet text, centered, multi-line (pic 2) ─
+\setbeamercolor{title}{fg=unlscarlet, bg=white}
+\setbeamercolor{subtitle}{fg=unlscarlet, bg=white}
+\setbeamerfont{title}{size=\large, series=\bfseries}
+\setbeamerfont{subtitle}{size=\normalsize, series=\normalfont}
+\setbeamerfont{author}{size=\normalsize, series=\bfseries}
+\setbeamerfont{institute}{size=\small, series=\normalfont}
+\setbeamerfont{date}{size=\small}
+
+\setbeamertemplate{title page}{%
+  \vfill
+  \begin{center}
+    {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle}
+    \ifx\insertsubtitle\@empty\else
+      \\[0.35em]
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle}
+    \fi
+    \\[0.6em]
+    \textcolor{unlscarlet}{\rule{0.55\textwidth}{0.5pt}}
+    \\[0.55em]
+    {\usebeamerfont{author}\insertauthor}
+    \\[0.3em]
+    {\usebeamerfont{institute}\insertinstitute}
+    \\[0.25em]
+    {\usebeamerfont{date}\insertdate}
+  \end{center}
+  \vfill
+}
+
+% ── Footer: cream bar, short title | author, slide N/Total ─
+%    Matches Screenshot 3 footer exactly
+\setbeamertemplate{footline}{%
+  \leavevmode
+  \begin{beamercolorbox}[%
+      wd=\paperwidth, ht=0.5cm, dp=0.2cm,
+      leftskip=0.5cm, rightskip=0.5cm]{block body}%  uses cream bg
+    \textcolor{unlgray}{\small%
+      \textbf{\insertshorttitle}\ \textbar\ \insertshortauthor
+      \hfill
+      \insertframenumber\,/\,\inserttotalframenumber
+    }%
+  \end{beamercolorbox}%
+}
+
+% ── Two-column helper (like \UNLtwocol in pic 3) ───────────
+\newcommand{\twocol}[2]{%
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}#1\end{column}
+    \hfill
+    \begin{column}{0.47\textwidth}#2\end{column}
+  \end{columns}%
+}
+
+% ── Highlight / Key point box (like pic 3 bottom box) ──────
+\newcommand{\keypoint}[1]{%
+  \vspace{0.4em}
+  \begin{beamercolorbox}[%
+      rounded=false, shadow=false,
+      wd=\textwidth, dp=0.25cm, ht=0.4cm,
+      leftskip=0.4cm, rightskip=0.4cm]{block body}
+    \textbf{Key point:}\ #1
+  \end{beamercolorbox}%
+}
+
+% ---------- Title page ----------
+\setbeamertemplate{title page}{
+  \begin{centering}
+    \vspace{0.7cm}
+
+    {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par}
+    \vspace{0.2cm}
+
+    {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \vspace{0.5cm}
+
+    {\Large\bfseries \insertauthor \par}
+    \vspace{0.08cm}
+
+    {\small \insertinstitute \par}
+    \vspace{0.04cm}
+
+
+
+    \vfill
+  \end{centering}
+}

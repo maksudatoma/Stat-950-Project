@@ -1,0 +1,544 @@
+---
+title: "Change-Point Detection in Logistic and Epidemic Models: Computational and Inferential Consequences"
+shorttitle: "Computational Statistics"
+shortauthor: "UNL"
+author: "Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam"
+institute: "Department of Statistics, University of Nebraska--Lincoln"
+
+
+format:
+  beamer:
+    aspectratio: 169
+    keep-tex: true
+    slide-level: 2
+    include-in-header: unl_style.tex
+---
+
+## Content
+
+- Introduction
+- Motivation and Objective
+- Logistic Growth Model
+- Bayesian Approach for Logistic Model
+- SIR Model
+- Bayesian Approach for SIR Model
+- Practical Recommendations
+- Discussion and Conclusion
+
+# Introduction
+
+## Introduction
+
+- Nonlinear growth processes arise in many scientific fields:
+  - ecology, population dynamics, epidemiology
+- Common modeling frameworks:
+  - logistic growth $\rightarrow$ population expansion with limits
+  - SIR models $\rightarrow$ infectious disease spread
+- Real-world systems are rarely stable over time:
+  - environmental changes
+  - policy interventions
+  - behavioral shifts
+- These can alter key model parameters and create different regimes.
+
+## Motivation and Objective
+
+- We use **change-point models** to allow parameters to shift at an unknown time point.
+- Main questions:
+  - When does the change occur?
+  - How do parameter values differ before and after the change?
+  - What happens if the change is ignored?
+- Challenges:
+  - nonlinear models lack closed-form solutions
+  - change-point introduces mixed discrete and continuous parameters
+  - SIR models require solving differential equations
+- Our strategy:
+  - start with logistic growth as a baseline
+  - extend to SIR for a more mechanistic setting
+  - compare frequentist and Bayesian inference
+
+# Model
+
+## Logistic Growth Model
+
+**Baseline model (no change-point)**
+
+$$
+y_i = f(t_i;\theta) + \varepsilon_i, \qquad \varepsilon_i \sim N(0,\sigma^2)
+$$
+
+with mean function
+
+$$
+f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
+$$
+
+- Growth starts slowly, increases rapidly, and then levels off at a maximum.
+
+## Logistic Change-Point Model
+
+- Real systems may experience a shift in growth behavior over time.
+- Introduce a change-point $\tau$ so the growth rate changes at an unknown time.
+
+$$
+f(t_i;\theta)=
+\begin{cases}
+\dfrac{K}{1+\exp\{-r_1(t_i-t_0)\}}, & t_i \le \tau, \\
+\dfrac{K}{1+\exp\{-r_2(t_i-t_0)\}}, & t_i > \tau.
+\end{cases}
+$$
+
+- Before $\tau$: growth rate $r_1$
+- After $\tau$: growth rate $r_2$
+
+## Parameters and Assumptions
+
+**Parameters**
+
+- $K$: carrying capacity
+- $t_0$: inflection point
+- $r_1, r_2$: growth rates
+- $\tau$: change-point
+- $\sigma^2$: error variance
+
+**Assumptions**
+
+- Logistic growth holds within each regime.
+- A single change-point exists.
+- Parameters are constant within each segment.
+- Errors are independent with constant variance.
+- The change is large enough for identifiability.
+
+## Frequentist Estimation: Logistic Model
+
+- Parameters estimated using **maximum likelihood estimation (MLE)**.
+- Under Gaussian errors, this is equivalent to minimizing the negative log-likelihood.
+- Optimization in R:
+  - `optim()`
+  - `L-BFGS-B` algorithm
+- No change-point model:
+  - directly estimate $(K, r, t_0, \sigma)$
+- Change-point model:
+  - treat $\tau$ as discrete
+  - use a grid search over candidate values of $\tau$
+  - for each candidate, optimize the remaining parameters
+  - choose the value of $\tau$ minimizing the negative log-likelihood
+- Model comparison is based on AIC.
+
+## Logistic Simulation Study
+
+- Goal: assess performance of the change-point logistic model
+- Data generated from a logistic model with a true change-point
+- Setup:
+  - sample size $n = 60$
+  - true parameters:
+    - $K = 100$
+    - $t_0 = 25$
+    - $r_1 = 0.22$
+    - $r_2 = 0.06$
+    - $\tau = 30$
+- Procedure:
+  - simulate dataset
+  - fit both no-change and change-point models
+  - repeat for 100 replications
+- Metrics:
+  - bias
+  - RMSE
+  - change-point detection accuracy
+  - AIC-based model selection
+
+## Logistic Simulation Results
+
+| Parameter | True Value | Mean Estimate | RMSE |
+|---|---:|---:|---:|
+| $K$ | 100.00 | 100.45 | 6.58 |
+| $r_1$ | 0.22 | 0.221 | 0.013 |
+| $r_2$ | 0.06 | 0.061 | 0.012 |
+| $t_0$ | 25.00 | 25.05 | 0.68 |
+| $\tau$ | 30.00 | 29.93 | 0.52 |
+
+**Takeaway:** estimates are close to the true values, with low variability overall.
+
+## Logistic Model: Key Insights
+
+- **Accuracy:** negligible bias for most parameters
+- Slight positive bias in $K$, but small relative to its scale
+- **Precision:** low RMSE for most parameters
+- Higher RMSE for $K$ reflects difficulty in estimating the plateau level
+- **Change-point detection:** 98% of $\hat\tau$ values fall within $\pm 2$ of the true value
+- **Model selection:** the change-point model is preferred in 100% of simulations by AIC
+
+## Parametric Bootstrap: Logistic Model
+
+- Goal: quantify uncertainty in frequentist estimates
+- Bootstrap based on the fitted change-point model
+- 200 bootstrap replications
+
+| Parameter | 95% CI |
+|---|---|
+| $\tau$ | $(28.98, 31.00)$ |
+| $K$ | $(92.18, 115.87)$ |
+| $r_1$ | $(0.187, 0.240)$ |
+| $r_2$ | $(0.035, 0.083)$ |
+| $t_0$ | $(24.46, 26.90)$ |
+| $\sigma$ | $(2.29, 3.44)$ |
+
+- $\tau$: narrow CI, centered near the true value
+- $K$: widest interval
+- $r_1$ estimated more precisely than $r_2$
+- Overall: bootstrap confirms stable and reliable frequentist inference
+
+## Bayesian Approach: Logistic Model
+
+- Advantages:
+  - captures joint uncertainty across all parameters
+  - avoids reliance on asymptotic approximations
+  - naturally handles uncertainty in $\tau$
+- Weakly informative priors chosen to match MLE bounds
+- With $n = 60$, the likelihood dominates the priors
+
+**MCMC setup**
+
+- Metropolis-within-Gibbs sampler
+- Continuous parameters: Gaussian random-walk proposals
+- $\tau$: discrete random-walk proposal
+- Tuning target: acceptance rate $0.20$--$0.50$
+- Run length:
+  - 50,000 iterations
+  - 5,000 burn-in
+  - thinning by 10
+  - 4,500 posterior samples retained
+
+## MCMC Tuning and Diagnostics
+
+| Parameter | Proposal SD | Acceptance Rate |
+|---|---:|---:|
+| $K$ | 4.0 | 0.213 |
+| $r_1$ | 0.025 | 0.347 |
+| $r_2$ | 0.008 | 0.223 |
+| $t_0$ | 1.0 | 0.200 |
+| $\sigma$ | 0.8 | 0.378 |
+| $\tau$ | $\pm\{1,2\}$ | 0.016 |
+
+- Continuous-parameter acceptance rates fall in the target range.
+- Low acceptance for $\tau$ is expected because of strong posterior concentration.
+- ESS and ACF show:
+  - high efficiency for $\sigma$ and $\tau$
+  - slower mixing for $K, r_1, r_2, t_0$ due to parameter dependence
+- Trace plots are stationary and show adequate convergence.
+
+
+## Logistic MCMC Diagnostics: Trace and ACF
+
+:::: {.columns}
+::: {.column width="50%"}
+![Trace plots after burn-in.](trace.png){width="100%"}
+:::
+
+::: {.column width="50%"}
+![ACF plots after thinning.](ACF.png){width="100%"}
+:::
+::::
+
+- Trace plots show stationarity and no drift.
+- $\sigma$ and $\tau$ mix well; $K$, $r_1$, $r_2$, and $t_0$ mix more slowly.
+- Diagnostics support convergence.
+
+
+## Posterior Summary: Logistic Model
+
+| Parameter | True Value | Post. Mean | Post. Median | 95% CI |
+|---|---:|---:|---:|---|
+| $\tau$ | 30.00 | 30.05 | 30.00 | $(30, 31)$ |
+| $K$ | 100.00 | 104.52 | 104.10 | $(93.05, 115.39)$ |
+| $r_1$ | 0.220 | 0.213 | 0.213 | $(0.191, 0.235)$ |
+| $r_2$ | 0.060 | 0.054 | 0.053 | $(0.037, 0.077)$ |
+| $t_0$ | 25.00 | 25.76 | 25.80 | $(24.57, 26.88)$ |
+| $\sigma$ | 3.000 | 3.024 | 2.999 | $(2.490, 3.648)$ |
+
+- All true values are well recovered.
+- $\tau$ is estimated very precisely.
+- $K$ has the largest uncertainty.
+
+## Bootstrap vs Bayesian: Logistic Model
+
+::: columns
+::: {.column width="55%"}
+![Comparison of bootstrap confidence intervals and Bayesian credible intervals.](ci.png){width="100%"}
+:::
+
+::: {.column width="45%"}
+- Close agreement for all continuous parameters.
+- $\tau$ is estimated precisely by both methods:
+  - bootstrap $(28,31)$
+  - Bayesian $(30,31)$
+- $K$ has the largest uncertainty.
+- $r_1$ is estimated more precisely than $r_2$.
+:::
+:::
+
+
+## SIR Model
+
+- Logistic growth captures overall epidemic patterns, but not transmission mechanisms.
+- We extend the analysis to the **SIR model**:
+  - $S$: susceptible
+  - $I$: infected
+  - $R$: recovered
+- Key advantage:
+  - mechanistic description of disease spread
+- Main challenge:
+  - no closed-form solution
+  - must solve an ODE system numerically
+
+## SIR Change-Point Model
+
+- Introduce a change-point in the transmission rate:
+
+$$
+\beta(t)=
+\begin{cases}
+\beta_1, & t \le \tau,\\
+\beta_2, & t > \tau.
+\end{cases}
+$$
+
+- Observation model:
+
+$$
+y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
+$$
+
+- The SIR dynamics are governed by differential equations and solved numerically at each evaluation.
+- This allows the model to capture interventions or behavioral changes.
+
+## Frequentist Estimation: SIR Model
+
+- Parameters estimated by MLE
+- Equivalent to minimizing the negative log-likelihood
+- For a fixed candidate $\tau$:
+  - estimate $\beta_1, \beta_2, \gamma, \sigma$ using `optim()` with `L-BFGS-B`
+  - solve the ODE system numerically at each likelihood evaluation
+- Estimate $\tau$ by grid search over candidate values
+- Select the value of $\tau$ that minimizes the negative log-likelihood
+
+## SIR Simulation Study
+
+- Time points: $t = 0,\dots,60$
+- True parameters:
+  - $\beta_1 = 0.40$
+  - $\beta_2 = 0.15$
+  - $\gamma = 0.10$
+  - $\tau = 20$
+- Initial conditions:
+  - $S(0) = 0.999$
+  - $I(0) = 0.001$
+  - $R(0) = 0$
+- Gaussian noise with $\sigma = 0.01$
+- Repeat over 100 simulated datasets
+- Metrics:
+  - bias
+  - RMSE
+  - change-point accuracy
+
+## SIR Simulation Results
+
+| Parameter | True | Mean Estimate | Bias | RMSE |
+|---|---:|---:|---:|---:|
+| $\beta_1$ | 0.40 | 0.4016 | 0.0016 | 0.0093 |
+| $\beta_2$ | 0.15 | 0.1531 | 0.0031 | 0.0230 |
+| $\gamma$ | 0.10 | 0.1004 | 0.0004 | 0.0061 |
+| $\tau$ | 20.00 | 19.84 | -0.16 | 0.5477 |
+
+- Very small bias across all parameters
+- Low RMSE indicates accurate recovery
+- $\beta_2$ shows slightly higher variability because of post-change uncertainty
+- $\tau$ is accurately detected
+
+## Bootstrap Results: SIR Model
+
+- Bootstrap quantifies uncertainty in the SIR parameters
+- 200 bootstrap replications
+- Bootstrap distribution of $\hat\tau$:
+  - mean = 19.875
+  - SD = 0.6335
+
+| Parameter | Lower | Upper |
+|---|---:|---:|
+| $\beta_1$ | 0.3799 | 0.4186 |
+| $\beta_2$ | 0.1001 | 0.2006 |
+| $\gamma$ | 0.0866 | 0.1110 |
+| $\tau$ | 19.00 | 21.00 |
+
+- All true values lie within the confidence intervals
+- $\tau$ is estimated with good precision
+- $\beta_2$ shows the widest uncertainty
+
+## Bayesian SIR Model
+
+- Bayesian inference captures full posterior uncertainty for the ODE-based model
+- Weakly informative priors over biologically meaningful ranges
+- Likelihood requires numerical ODE solving at every MCMC step
+
+**MCMC setup**
+
+- Metropolis-within-Gibbs sampler
+- Continuous parameters: Gaussian random walk
+- $\tau$: discrete random walk
+- 30,000 iterations
+- 5,000 burn-in
+- thinning by 10
+- 2,500 retained posterior samples
+
+## Convergence Diagnostics: SIR Model
+
+| Parameter | Proposal SD | Acceptance Rate |
+|---|---:|---:|
+| $\beta_1$ | 0.005 | 0.275 |
+| $\beta_2$ | 0.008 | 0.365 |
+| $\gamma$ | 0.003 | 0.226 |
+| $\sigma$ | 0.005 | 0.182 |
+| $\tau$ | $\pm\{1,2\}$ | 0.000 |
+
+| $\beta_1$ | $\beta_2$ | $\gamma$ | $\sigma$ | $\tau$ |
+|---:|---:|---:|---:|:---|
+| $\sim 150$ | $\sim 100$ | $\sim 120$ | $\sim 1200$ | 0 (point mass) |
+
+- Continuous parameters have acceptable mixing.
+- $\tau$ has zero acceptance, not because of sampler failure, but because the posterior collapses at the true value.
+- $\sigma$ mixes very efficiently; $\beta_1, \beta_2, \gamma$ show moderate dependence due to the shared ODE structure.
+
+## Posterior Summary: SIR Model
+
+| Parameter | True | Mean | Median | 95% CI |
+|---|---:|---:|---:|---|
+| $\beta_1$ | 0.40 | 0.4060 | 0.4060 | $(0.4006, 0.4110)$ |
+| $\beta_2$ | 0.15 | 0.1707 | 0.1706 | $(0.1495, 0.1908)$ |
+| $\gamma$ | 0.10 | 0.1054 | 0.1053 | $(0.0996, 0.1106)$ |
+| $\sigma$ | 0.01 | 0.0093 | 0.0092 | $(0.0078, 0.0112)$ |
+| $\tau$ | 20 | point mass |  | $\tau=20$ |
+
+- Posterior inference recovers the true parameters well.
+- $\sigma$ is the most precisely estimated.
+- $\beta_2$ has the largest uncertainty.
+- $\tau$ is point-identified at the true value.
+
+## SIR: Posterior Fit and Interpretation
+
+::: columns
+::: {.column width="58%"}
+![SIR model fitted trajectory.](SIR.png){width="100%"}
+:::
+
+::: {.column width="42%"}
+- Posterior fit closely matches the observed epidemic curve.
+- The change-point is correctly identified at $\tau = 20$.
+- The model captures both the epidemic peak and the post-intervention decline.
+- This supports stronger change-point identifiability in the SIR model than in the logistic model.
+:::
+:::
+
+## Bootstrap vs Bayesian: SIR Model
+
+| Parameter | Bootstrap CI | Bayesian CI |
+|---|---|---|
+| $\beta_1$ | $(0.3799, 0.4186)$ | $(0.4006, 0.4110)$ |
+| $\beta_2$ | $(0.1001, 0.2006)$ | $(0.1495, 0.1908)$ |
+| $\gamma$ | $(0.0866, 0.1110)$ | $(0.0996, 0.1106)$ |
+
+- Strong agreement for $\beta_1$
+- Wider Bayesian interval for $\beta_2$
+- Slight differences reflect stronger posterior dependence in the SIR model
+- Both methods support the same qualitative conclusions
+
+## Computational Considerations
+
+- Strong computational contrast between logistic and SIR models
+
+**Logistic model**
+
+- closed-form mean function
+- fast likelihood evaluation
+- efficient profile search
+
+**SIR model**
+
+- requires numerical ODE solution at each evaluation
+- much slower profile likelihood and MCMC
+- repeated ODE solves dominate runtime
+
+**Implication:** model realism improves, but computational cost increases sharply.
+
+## Numerical Stability and Initialization
+
+**Logistic model**
+
+- stable optimization across simulations
+- smooth likelihood surface
+- reliable convergence with `L-BFGS-B`
+
+**SIR model**
+
+- requires ODE solver safeguards
+- occasional instability for extreme parameter values
+- stability improves with safe evaluation wrappers
+
+**Initialization**
+
+- MLE estimates used as starting values for MCMC
+- low sensitivity for logistic model
+- stronger sensitivity for SIR model
+- MLE initialization improves convergence and reduces burn-in
+
+## Change-Point Identifiability
+
+**Logistic model**
+
+- $\tau$ moves between nearby values 30 and 31
+- indicates moderate uncertainty
+
+**SIR model**
+
+- $\tau$ remains fixed at 20
+- indicates extreme identifiability
+
+**Interpretation**
+
+- the SIR likelihood is much more sensitive to the change-point
+- incorrect values are strongly penalized
+- more mechanistic models can produce stronger change-point detectability
+
+# Summarry
+
+## Practical Recommendations
+
+- **Model selection:** AIC works well for choosing between no-change and change-point models
+- **Change-point estimation:** profile likelihood grid search is efficient and interpretable
+- **Uncertainty quantification:** both bootstrap and Bayesian methods are valid
+- **Computational caution:** bootstrap is much more expensive for ODE-based models
+- **MCMC practice:**
+  - initialize at MLEs
+  - tune continuous-parameter acceptance rates to $0.20$--$0.50$
+  - zero acceptance for a discrete parameter can indicate strong identifiability rather than failure
+
+## Discussion and Conclusion
+
+- Both logistic and SIR change-point models recover parameters accurately.
+- Logistic model:
+  - simpler
+  - faster
+  - less computationally expensive
+- SIR model:
+  - more realistic
+  - computationally intensive
+  - yields stronger change-point identifiability
+- Frequentist and Bayesian methods agree strongly in the logistic model and remain broadly consistent in the SIR model.
+- Main conclusion:
+  - model structure strongly affects identifiability, computational cost, and uncertainty quantification
+
+
+## Thank you
+
+\begin{center}
+\Large Thank you\\[0.5em]
+\large Questions?
+\end{center}
