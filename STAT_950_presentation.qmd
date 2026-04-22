@@ -56,7 +56,7 @@ format:
   - extend to SIR for a more mechanistic setting
   - compare frequentist and Bayesian inference
 
-# Model
+#  Logistic Growth Model
 
 ## Logistic Growth Model
 
@@ -126,7 +126,6 @@ $$
 
 ## Logistic Simulation Study
 
-- Goal: assess performance of the change-point logistic model
 - Data generated from a logistic model with a true change-point
 - Setup:
   - sample size $n = 60$
@@ -140,25 +139,27 @@ $$
   - simulate dataset
   - fit both no-change and change-point models
   - repeat for 100 replications
-- Metrics:
-  - bias
-  - RMSE
-  - change-point detection accuracy
-  - AIC-based model selection
+- Metrics:bias, RMSE, change-point detection accuracy, AIC-based model selection
 
-## Logistic Simulation Results
+## Logistic Simulation Study
 
-| Parameter | True Value | Mean Estimate | RMSE |
+::: columns
+::: {.column width="50%"}
+
+**Results**
+
+| Parameter | True | Estimate | RMSE |
 |---|---:|---:|---:|
-| $K$ | 100.00 | 100.45 | 6.58 |
+| $K$ | 100 | 100.45 | 6.58 |
 | $r_1$ | 0.22 | 0.221 | 0.013 |
 | $r_2$ | 0.06 | 0.061 | 0.012 |
-| $t_0$ | 25.00 | 25.05 | 0.68 |
-| $\tau$ | 30.00 | 29.93 | 0.52 |
+| $t_0$ | 25 | 25.05 | 0.68 |
+| $\tau$ | 30 | 29.93 | 0.52 |
 
-**Takeaway:** estimates are close to the true values, with low variability overall.
+:::
+::: {.column width="50%"}
 
-## Logistic Model: Key Insights
+**Key Insights**
 
 - **Accuracy:** negligible bias for most parameters
 - Slight positive bias in $K$, but small relative to its scale
@@ -167,11 +168,17 @@ $$
 - **Change-point detection:** 98% of $\hat\tau$ values fall within $\pm 2$ of the true value
 - **Model selection:** the change-point model is preferred in 100% of simulations by AIC
 
+:::
+:::
+
 ## Parametric Bootstrap: Logistic Model
 
-- Goal: quantify uncertainty in frequentist estimates
+- Quantify uncertainty in frequentist estimates
 - Bootstrap based on the fitted change-point model
 - 200 bootstrap replications
+
+::: columns
+::: {.column width="50%"}
 
 | Parameter | 95% CI |
 |---|---|
@@ -182,17 +189,20 @@ $$
 | $t_0$ | $(24.46, 26.90)$ |
 | $\sigma$ | $(2.29, 3.44)$ |
 
+:::
+::: {.column width="50%"}
+
 - $\tau$: narrow CI, centered near the true value
 - $K$: widest interval
 - $r_1$ estimated more precisely than $r_2$
 - Overall: bootstrap confirms stable and reliable frequentist inference
 
+:::
+:::
+
 ## Bayesian Approach: Logistic Model
 
-- Advantages:
-  - captures joint uncertainty across all parameters
-  - avoids reliance on asymptotic approximations
-  - naturally handles uncertainty in $\tau$
+- Captures joint uncertainty across all parameters and avoids reliance on asymptotic approximations
 - Weakly informative priors chosen to match MLE bounds
 - With $n = 60$, the likelihood dominates the priors
 
@@ -208,23 +218,32 @@ $$
   - thinning by 10
   - 4,500 posterior samples retained
 
-## MCMC Tuning and Diagnostics
+## Logistic MCMC Tuning and Diagnostics
 
-| Parameter | Proposal SD | Acceptance Rate |
-|---|---:|---:|
-| $K$ | 4.0 | 0.213 |
-| $r_1$ | 0.025 | 0.347 |
-| $r_2$ | 0.008 | 0.223 |
-| $t_0$ | 1.0 | 0.200 |
-| $\sigma$ | 0.8 | 0.378 |
-| $\tau$ | $\pm\{1,2\}$ | 0.016 |
+<!-- | Parameter | Proposal SD | Acceptance Rate | -->
+<!-- |---|---:|---:| -->
+<!-- | $K$ | 4.0 | 0.213 | -->
+<!-- | $r_1$ | 0.025 | 0.347 | -->
+<!-- | $r_2$ | 0.008 | 0.223 | -->
+<!-- | $t_0$ | 1.0 | 0.200 | -->
+<!-- | $\sigma$ | 0.8 | 0.378 | -->
+<!-- | $\tau$ | $\pm\{1,2\}$ | 0.016 | --> 
 
 - Continuous-parameter acceptance rates fall in the target range.
-- Low acceptance for $\tau$ is expected because of strong posterior concentration.
-- ESS and ACF show:
-  - high efficiency for $\sigma$ and $\tau$
-  - slower mixing for $K, r_1, r_2, t_0$ due to parameter dependence
-- Trace plots are stationary and show adequate convergence.
+- Low acceptance for $\tau$: expected because of strong posterior concentration.
+
+- ESS (Effective Sample Size):
+  - High ESS for $\sigma$ and $\tau$ indicates efficient sampling 
+  - Lower ESS for $K, r_1, r_2, t_0$ due to parameter dependence
+
+- Trace Plots:
+  - Chains are stationary (no drift) 
+  - Continuous parameters exhibit “fuzzy caterpillar” behavior → good mixing 
+  - $\tau$ concentrated near 30–31 → strong identifiability 
+
+- ACF:
+  - $\sigma$ and $\tau$: fast decay → low autocorrelation 
+  - $K$, $r_1$, $r_2$, and $t_0$ → persistent dependence
 
 
 ## Logistic MCMC Diagnostics: Trace and ACF
@@ -238,10 +257,6 @@ $$
 ![ACF plots after thinning.](ACF.png){width="100%"}
 :::
 ::::
-
-- Trace plots show stationarity and no drift.
-- $\sigma$ and $\tau$ mix well; $K$, $r_1$, $r_2$, and $t_0$ mix more slowly.
-- Diagnostics support convergence.
 
 
 ## Posterior Summary: Logistic Model
@@ -276,6 +291,7 @@ $$
 :::
 :::
 
+# SIR Model
 
 ## SIR Model
 
@@ -362,6 +378,9 @@ $$
   - mean = 19.875
   - SD = 0.6335
 
+::: columns
+::: {.column width="50%"}
+
 | Parameter | Lower | Upper |
 |---|---:|---:|
 | $\beta_1$ | 0.3799 | 0.4186 |
@@ -369,9 +388,15 @@ $$
 | $\gamma$ | 0.0866 | 0.1110 |
 | $\tau$ | 19.00 | 21.00 |
 
+::: 
+::: {.column width="50%"}
+
 - All true values lie within the confidence intervals
 - $\tau$ is estimated with good precision
 - $\beta_2$ shows the widest uncertainty
+
+:::
+:::
 
 ## Bayesian SIR Model
 
@@ -391,21 +416,45 @@ $$
 
 ## Convergence Diagnostics: SIR Model
 
-| Parameter | Proposal SD | Acceptance Rate |
-|---|---:|---:|
-| $\beta_1$ | 0.005 | 0.275 |
-| $\beta_2$ | 0.008 | 0.365 |
-| $\gamma$ | 0.003 | 0.226 |
-| $\sigma$ | 0.005 | 0.182 |
-| $\tau$ | $\pm\{1,2\}$ | 0.000 |
+<!-- | Parameter | Proposal SD | Acceptance Rate | -->
+<!-- |---|---:|---:| -->
+<!-- | $\beta_1$ | 0.005 | 0.275 | -->
+<!-- | $\beta_2$ | 0.008 | 0.365 | -->
+<!-- | $\gamma$ | 0.003 | 0.226 | -->
+<!-- | $\sigma$ | 0.005 | 0.182 | -->
+<!-- | $\tau$ | $\pm\{1,2\}$ | 0.000 | -->
 
-| $\beta_1$ | $\beta_2$ | $\gamma$ | $\sigma$ | $\tau$ |
-|---:|---:|---:|---:|:---|
-| $\sim 150$ | $\sim 100$ | $\sim 120$ | $\sim 1200$ | 0 (point mass) |
+<!-- | $\beta_1$ | $\beta_2$ | $\gamma$ | $\sigma$ | $\tau$ | -->
+<!-- |---:|---:|---:|---:|:---| -->
+<!-- | $\sim 150$ | $\sim 100$ | $\sim 120$ | $\sim 1200$ | 0 (point mass) | -->
 
-- Continuous parameters have acceptable mixing.
-- $\tau$ has zero acceptance, not because of sampler failure, but because the posterior collapses at the true value.
-- $\sigma$ mixes very efficiently; $\beta_1, \beta_2, \gamma$ show moderate dependence due to the shared ODE structure.
+::: columns
+::: {.column width="50%"}
+- **Acceptance:**
+  - Continuous parameters mix well
+  - $\tau$: zero acceptance due to strong identifiability
+
+- **ESS:**
+  - $\sigma$: high → efficient mixing  
+  - $\beta_1, \beta_2, \gamma$: moderate → slower mixing  
+
+:::
+::: {.column width="50%"}
+
+- **Trace plots:**
+  - Stable, no drift → convergence achieved  
+
+- **ACF:**
+  - $\sigma$: fast decay  
+  - $\beta_1, \beta_2, \gamma$: slow decay reflecting dependence due to shared ODE structure
+
+:::
+:::
+
+
+**Overall:**Model converges well; strong identifiability fixes $\tau$, while parameter dependence slows mixing.
+
+**Are we including plots here**
 
 ## Posterior Summary: SIR Model
 
@@ -451,8 +500,6 @@ $$
 - Both methods support the same qualitative conclusions
 
 ## Computational Considerations
-
-- Strong computational contrast between logistic and SIR models
 
 **Logistic model**
 

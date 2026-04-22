@@ -1,5 +1,4 @@
 % Options for packages loaded elsewhere
-% Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 %
@@ -7,13 +6,14 @@
   ignorenonframetext,
   aspectratio=169,
 ]{beamer}
-\newif\ifbibliography
 \usepackage{pgfpages}
 \setbeamertemplate{caption}[numbered]
 \setbeamertemplate{caption label separator}{: }
 \setbeamercolor{caption name}{fg=normal text.fg}
 \beamertemplatenavigationsymbolsempty
-% remove section numbering
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
 \setbeamertemplate{part page}{
   \centering
   \begin{beamercolorbox}[sep=16pt,center]{part title}
@@ -22,19 +22,16 @@
 }
 \setbeamertemplate{section page}{
   \centering
-  \begin{beamercolorbox}[sep=12pt,center]{section title}
+  \begin{beamercolorbox}[sep=12pt,center]{part title}
     \usebeamerfont{section title}\insertsection\par
   \end{beamercolorbox}
 }
 \setbeamertemplate{subsection page}{
   \centering
-  \begin{beamercolorbox}[sep=8pt,center]{subsection title}
+  \begin{beamercolorbox}[sep=8pt,center]{part title}
     \usebeamerfont{subsection title}\insertsubsection\par
   \end{beamercolorbox}
 }
-% Prevent slide breaks in the middle of a paragraph
-\widowpenalties 1 10000
-\raggedbottom
 \AtBeginPart{
   \frame{\partpage}
 }
@@ -47,20 +44,21 @@
 \AtBeginSubsection{
   \frame{\subsectionpage}
 }
+
+\usepackage{amsmath,amssymb}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
   \usepackage{textcomp} % provide euro and other symbols
 \else % if luatex or xetex
-  \usepackage{unicode-math} % this also loads fontspec
+  \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
 \fi
 \usepackage{lmodern}
-
-\ifPDFTeX\else
-  % xetex/luatex font selection
+\ifPDFTeX\else  
+    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -78,9 +76,14 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
+\usepackage{xcolor}
+\newif\ifbibliography
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 
 
-\usepackage{longtable,booktabs,array}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
 \usepackage{calc} % for calculating minipage widths
 \usepackage{caption}
 % Make caption package work with longtable
@@ -89,33 +92,17 @@
 \makeatother
 \usepackage{graphicx}
 \makeatletter
-\newsavebox\pandoc@box
-\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
-  \sbox\pandoc@box{#1}%
-  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
-  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
-  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
-  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
-  \else\usebox{\pandoc@box}%
-  \fi%
-}
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
 % Set default figure placement to htbp
+\makeatletter
 \def\fps@figure{htbp}
 \makeatother
-
-
-
-
-
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-
-
-
- 
-
 
 % ============================================================
 %  UNL Combined Style
@@ -193,6 +180,11 @@
     {\usebeamerfont{date}\insertdate}
   \end{center}
   \vfill
+}
+
+\AtBeginDocument{
+  \title[Computational Statistics]{Change-Point Detection in Logistic and Epidemic Models: Computational and Inferential Consequences}
+  \author[UNL]{Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam}
 }
 
 % ── Footer: cream bar, short title | author, slide N/Total ─
@@ -294,9 +286,13 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
 \usepackage{bookmark}
+
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same}
+\urlstyle{same} % disable monospaced font for URLs
 \hypersetup{
   pdftitle={Change-Point Detection in Logistic and Epidemic Models: Computational and Inferential Consequences},
   pdfauthor={Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam},
@@ -304,9 +300,9 @@
   pdfcreator={LaTeX via pandoc}}
 
 
-\title[Computational Statistics]{Change-Point Detection in Logistic and
-Epidemic Models: Computational and Inferential Consequences}
-\author[UNL]{Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam}
+\title{Change-Point Detection in Logistic and Epidemic Models:
+Computational and Inferential Consequences}
+\author{Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam}
 \date{}
 \institute{Department of Statistics, University of Nebraska--Lincoln}
 
@@ -424,10 +420,10 @@ Epidemic Models: Computational and Inferential Consequences}
 \end{itemize}
 \end{frame}
 
-\section{Model}\label{model}
+\section{Logistic Growth Model}\label{logistic-growth-model}
 
 \begin{frame}{Logistic Growth Model}
-\phantomsection\label{logistic-growth-model}
+\phantomsection\label{logistic-growth-model-1}
 \textbf{Baseline model (no change-point)}
 
 \[
@@ -563,8 +559,6 @@ f(t_i;\theta)=
 \begin{itemize}
 \tightlist
 \item
-  Goal: assess performance of the change-point logistic model
-\item
   Data generated from a logistic model with a true change-point
 \item
   Setup:
@@ -603,43 +597,34 @@ f(t_i;\theta)=
     repeat for 100 replications
   \end{itemize}
 \item
-  Metrics:
-
-  \begin{itemize}
-  \tightlist
-  \item
-    bias
-  \item
-    RMSE
-  \item
-    change-point detection accuracy
-  \item
-    AIC-based model selection
-  \end{itemize}
+  Metrics:bias, RMSE, change-point detection accuracy, AIC-based model
+  selection
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Logistic Simulation Results}
-\phantomsection\label{logistic-simulation-results}
+\begin{frame}{Logistic Simulation Study}
+\phantomsection\label{logistic-simulation-study-1}
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
+\textbf{Results}
+
 \begin{longtable}[]{@{}lrrr@{}}
 \toprule\noalign{}
-Parameter & True Value & Mean Estimate & RMSE \\
+Parameter & True & Estimate & RMSE \\
 \midrule\noalign{}
 \endhead
-\(K\) & 100.00 & 100.45 & 6.58 \\
+\(K\) & 100 & 100.45 & 6.58 \\
 \(r_1\) & 0.22 & 0.221 & 0.013 \\
 \(r_2\) & 0.06 & 0.061 & 0.012 \\
-\(t_0\) & 25.00 & 25.05 & 0.68 \\
-\(\tau\) & 30.00 & 29.93 & 0.52 \\
+\(t_0\) & 25 & 25.05 & 0.68 \\
+\(\tau\) & 30 & 29.93 & 0.52 \\
 \bottomrule\noalign{}
 \end{longtable}
+\end{column}
 
-\textbf{Takeaway:} estimates are close to the true values, with low
-variability overall.
-\end{frame}
+\begin{column}{0.5\textwidth}
+\textbf{Key Insights}
 
-\begin{frame}{Logistic Model: Key Insights}
-\phantomsection\label{logistic-model-key-insights}
 \begin{itemize}
 \tightlist
 \item
@@ -658,6 +643,8 @@ variability overall.
   \textbf{Model selection:} the change-point model is preferred in 100\%
   of simulations by AIC
 \end{itemize}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{Parametric Bootstrap: Logistic Model}
@@ -665,13 +652,15 @@ variability overall.
 \begin{itemize}
 \tightlist
 \item
-  Goal: quantify uncertainty in frequentist estimates
+  Quantify uncertainty in frequentist estimates
 \item
   Bootstrap based on the fitted change-point model
 \item
   200 bootstrap replications
 \end{itemize}
 
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
 \begin{longtable}[]{@{}ll@{}}
 \toprule\noalign{}
 Parameter & 95\% CI \\
@@ -685,7 +674,9 @@ Parameter & 95\% CI \\
 \(\sigma\) & \((2.29, 3.44)\) \\
 \bottomrule\noalign{}
 \end{longtable}
+\end{column}
 
+\begin{column}{0.5\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -697,6 +688,8 @@ Parameter & 95\% CI \\
 \item
   Overall: bootstrap confirms stable and reliable frequentist inference
 \end{itemize}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{Bayesian Approach: Logistic Model}
@@ -704,17 +697,8 @@ Parameter & 95\% CI \\
 \begin{itemize}
 \tightlist
 \item
-  Advantages:
-
-  \begin{itemize}
-  \tightlist
-  \item
-    captures joint uncertainty across all parameters
-  \item
-    avoids reliance on asymptotic approximations
-  \item
-    naturally handles uncertainty in \(\tau\)
-  \end{itemize}
+  Captures joint uncertainty across all parameters and avoids reliance
+  on asymptotic approximations
 \item
   Weakly informative priors chosen to match MLE bounds
 \item
@@ -750,51 +734,57 @@ Parameter & 95\% CI \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{MCMC Tuning and Diagnostics}
-\phantomsection\label{mcmc-tuning-and-diagnostics}
-\begin{longtable}[]{@{}lrr@{}}
-\toprule\noalign{}
-Parameter & Proposal SD & Acceptance Rate \\
-\midrule\noalign{}
-\endhead
-\(K\) & 4.0 & 0.213 \\
-\(r_1\) & 0.025 & 0.347 \\
-\(r_2\) & 0.008 & 0.223 \\
-\(t_0\) & 1.0 & 0.200 \\
-\(\sigma\) & 0.8 & 0.378 \\
-\(\tau\) & \(\pm\{1,2\}\) & 0.016 \\
-\bottomrule\noalign{}
-\end{longtable}
-
+\begin{frame}{Logistic MCMC Tuning and Diagnostics}
+\phantomsection\label{logistic-mcmc-tuning-and-diagnostics}
 \begin{itemize}
-\tightlist
 \item
   Continuous-parameter acceptance rates fall in the target range.
 \item
-  Low acceptance for \(\tau\) is expected because of strong posterior
+  Low acceptance for \(\tau\): expected because of strong posterior
   concentration.
 \item
-  ESS and ACF show:
+  ESS (Effective Sample Size):
 
   \begin{itemize}
   \tightlist
   \item
-    high efficiency for \(\sigma\) and \(\tau\)
+    High ESS for \(\sigma\) and \(\tau\) indicates efficient sampling
   \item
-    slower mixing for \(K, r_1, r_2, t_0\) due to parameter dependence
+    Lower ESS for \(K, r_1, r_2, t_0\) due to parameter dependence
   \end{itemize}
 \item
-  Trace plots are stationary and show adequate convergence.
+  Trace Plots:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Chains are stationary (no drift)
+  \item
+    Continuous parameters exhibit ``fuzzy caterpillar'' behavior → good
+    mixing
+  \item
+    \(\tau\) concentrated near 30--31 → strong identifiability
+  \end{itemize}
+\item
+  ACF:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\sigma\) and \(\tau\): fast decay → low autocorrelation
+  \item
+    \(K\), \(r_1\), \(r_2\), and \(t_0\) → persistent dependence
+  \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Logistic MCMC Diagnostics: Trace and ACF}
 \phantomsection\label{logistic-mcmc-diagnostics-trace-and-acf}
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{trace.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{trace.png}
 
 }
 
@@ -803,10 +793,10 @@ Parameter & Proposal SD & Acceptance Rate \\
 \end{figure}%
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{ACF.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{ACF.png}
 
 }
 
@@ -815,17 +805,6 @@ Parameter & Proposal SD & Acceptance Rate \\
 \end{figure}%
 \end{column}
 \end{columns}
-
-\begin{itemize}
-\tightlist
-\item
-  Trace plots show stationarity and no drift.
-\item
-  \(\sigma\) and \(\tau\) mix well; \(K\), \(r_1\), \(r_2\), and \(t_0\)
-  mix more slowly.
-\item
-  Diagnostics support convergence.
-\end{itemize}
 \end{frame}
 
 \begin{frame}{Posterior Summary: Logistic Model}
@@ -858,10 +837,10 @@ Parameter & True Value & Post. Mean & Post. Median & 95\% CI \\
 \begin{frame}{Bootstrap vs Bayesian: Logistic Model}
 \phantomsection\label{bootstrap-vs-bayesian-logistic-model}
 \begin{columns}[T]
-\begin{column}{0.55\linewidth}
+\begin{column}{0.55\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{ci.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{ci.png}
 
 }
 
@@ -871,7 +850,7 @@ credible intervals.}
 \end{figure}%
 \end{column}
 
-\begin{column}{0.45\linewidth}
+\begin{column}{0.45\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -895,8 +874,10 @@ credible intervals.}
 \end{columns}
 \end{frame}
 
+\section{SIR Model}\label{sir-model}
+
 \begin{frame}{SIR Model}
-\phantomsection\label{sir-model}
+\phantomsection\label{sir-model-1}
 \begin{itemize}
 \tightlist
 \item
@@ -1097,6 +1078,8 @@ Parameter & True & Mean Estimate & Bias & RMSE \\
   \end{itemize}
 \end{itemize}
 
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
 \begin{longtable}[]{@{}lrr@{}}
 \toprule\noalign{}
 Parameter & Lower & Upper \\
@@ -1108,7 +1091,9 @@ Parameter & Lower & Upper \\
 \(\tau\) & 19.00 & 21.00 \\
 \bottomrule\noalign{}
 \end{longtable}
+\end{column}
 
+\begin{column}{0.5\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -1118,6 +1103,8 @@ Parameter & Lower & Upper \\
 \item
   \(\beta_2\) shows the widest uncertainty
 \end{itemize}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{Bayesian SIR Model}
@@ -1156,40 +1143,63 @@ Parameter & Lower & Upper \\
 
 \begin{frame}{Convergence Diagnostics: SIR Model}
 \phantomsection\label{convergence-diagnostics-sir-model}
-\begin{longtable}[]{@{}lrr@{}}
-\toprule\noalign{}
-Parameter & Proposal SD & Acceptance Rate \\
-\midrule\noalign{}
-\endhead
-\(\beta_1\) & 0.005 & 0.275 \\
-\(\beta_2\) & 0.008 & 0.365 \\
-\(\gamma\) & 0.003 & 0.226 \\
-\(\sigma\) & 0.005 & 0.182 \\
-\(\tau\) & \(\pm\{1,2\}\) & 0.000 \\
-\bottomrule\noalign{}
-\end{longtable}
-
-\begin{longtable}[]{@{}rrrrl@{}}
-\toprule\noalign{}
-\(\beta_1\) & \(\beta_2\) & \(\gamma\) & \(\sigma\) & \(\tau\) \\
-\midrule\noalign{}
-\endhead
-\(\sim 150\) & \(\sim 100\) & \(\sim 120\) & \(\sim 1200\) & 0 (point
-mass) \\
-\bottomrule\noalign{}
-\end{longtable}
-
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
 \begin{itemize}
 \tightlist
 \item
-  Continuous parameters have acceptable mixing.
+  \textbf{Acceptance:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Continuous parameters mix well
+  \item
+    \(\tau\): zero acceptance due to strong identifiability
+  \end{itemize}
 \item
-  \(\tau\) has zero acceptance, not because of sampler failure, but
-  because the posterior collapses at the true value.
-\item
-  \(\sigma\) mixes very efficiently; \(\beta_1, \beta_2, \gamma\) show
-  moderate dependence due to the shared ODE structure.
+  \textbf{ESS:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\sigma\): high → efficient mixing\\
+  \item
+    \(\beta_1, \beta_2, \gamma\): moderate → slower mixing
+  \end{itemize}
 \end{itemize}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Trace plots:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Stable, no drift → convergence achieved
+  \end{itemize}
+\item
+  \textbf{ACF:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\sigma\): fast decay\\
+  \item
+    \(\beta_1, \beta_2, \gamma\): slow decay reflecting dependence due
+    to shared ODE structure
+  \end{itemize}
+\end{itemize}
+\end{column}
+\end{columns}
+
+\textbf{Overall:}Model converges well; strong identifiability fixes
+\(\tau\), while parameter dependence slows mixing.
+
+\textbf{Are we including plots here}
 \end{frame}
 
 \begin{frame}{Posterior Summary: SIR Model}
@@ -1223,10 +1233,10 @@ Parameter & True & Mean & Median & 95\% CI \\
 \begin{frame}{SIR: Posterior Fit and Interpretation}
 \phantomsection\label{sir-posterior-fit-and-interpretation}
 \begin{columns}[T]
-\begin{column}{0.58\linewidth}
+\begin{column}{0.58\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{SIR.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{SIR.png}
 
 }
 
@@ -1235,7 +1245,7 @@ Parameter & True & Mean & Median & 95\% CI \\
 \end{figure}%
 \end{column}
 
-\begin{column}{0.42\linewidth}
+\begin{column}{0.42\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -1282,12 +1292,6 @@ Parameter & Bootstrap CI & Bayesian CI \\
 
 \begin{frame}{Computational Considerations}
 \phantomsection\label{computational-considerations}
-\begin{itemize}
-\tightlist
-\item
-  Strong computational contrast between logistic and SIR models
-\end{itemize}
-
 \textbf{Logistic model}
 
 \begin{itemize}
