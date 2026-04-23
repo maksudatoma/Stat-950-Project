@@ -216,11 +216,10 @@ $$
 - Continuous parameters: Gaussian random-walk proposals
 - $\tau$: discrete random-walk proposal
 - Tuning target: acceptance rate $0.20$--$0.50$
-- Run length:
-  - 50,000 iterations
-  - 5,000 burn-in
-  - thinning by 10
-  - 4,500 posterior samples retained
+- 50,000 iterations
+- 5,000 burn-in
+- thinning by 10
+- 4,500 posterior samples retained
 
 ## Logistic MCMC Tuning and Diagnostics
 
@@ -282,7 +281,7 @@ $$
 
 ::: {.columns}
 
-::: {.column width="40%"}
+::: {.column width="50%"}
 
 **SIR Model**
 
@@ -305,7 +304,7 @@ $$
 
 :::
 
-::: {.column width="60%"}
+::: {.column width="50%"}
 
 **Change-Point Extension**
 
