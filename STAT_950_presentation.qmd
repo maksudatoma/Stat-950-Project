@@ -75,6 +75,8 @@ $$
 f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
 $$
 
+- Growth starts slowly, increases rapidly, and then levels off at a maximum.
+
 :::
 ::: {.column width="30%"}
 
@@ -90,7 +92,7 @@ $$
 :::
 
 
-- Growth starts slowly, increases rapidly, and then levels off at a maximum.
+
 
 ## Logistic Change-Point Model
 
@@ -184,6 +186,8 @@ $$
 ::: columns
 ::: {.column width="50%"}
 
+\vspace{-10pt}
+
 | Parameter | 95% CI |
 |---|---|
 | $\tau$ | $(28.98, 31.00)$ |
@@ -241,8 +245,6 @@ $$
 ![ACF plots after thinning.](ACF.png){width="100%"}
 :::
 ::::
-
-**remove slide 15 and just keep the plots** - In slide 15 should we keep acceptance rate and ESS part, only remove trace and ACF?? Yes!
 
 
 ## Posterior Summary: Logistic Model
@@ -356,7 +358,7 @@ $$
 
 :::
 
-::: {.column width="35%"}
+::: {.column width="30%"}
 
 **Simulation Study**
 
@@ -379,7 +381,7 @@ $$
 
 :::
 
-::: {.column width="20%"}
+::: {.column width="25%"}
 
 **Metrics**
 
@@ -410,11 +412,14 @@ $$
 - Bootstrap quantifies uncertainty in the SIR parameters
 - 200 bootstrap replications
 - Bootstrap distribution of $\hat\tau$:
+
   - mean = 19.875
   - SD = 0.6335
 
 ::: columns
 ::: {.column width="50%"}
+
+\vspace{-10pt}
 
 | Parameter | Lower | Upper |
 |---|---:|---:|
@@ -463,7 +468,6 @@ $$
 
 <!-- **Overall:**Model converges well; strong identifiability fixes $\tau$, while parameter dependence slows mixing. -->
 
-**Remove 27 and add the plots**[Added plots]
 
 ## SIR MCMC Diagnostics: Trace and ACF
 
@@ -554,7 +558,6 @@ $$
 
 **Implication:** Mechanistic models improve change-point detection but increase computational burden.
 
-**Read 31,32,33 and change it accordingly[FIXED]**
 
 # Summary
 
