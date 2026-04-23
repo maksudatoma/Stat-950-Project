@@ -450,22 +450,9 @@ $$
 - thinning by 10
 - 2,500 retained posterior samples
 
-## Convergence Diagnostics: SIR Model
+## SIR MCMC Tuning and Diagnostics
 
-<!-- | Parameter | Proposal SD | Acceptance Rate | -->
-<!-- |---|---:|---:| -->
-<!-- | $\beta_1$ | 0.005 | 0.275 | -->
-<!-- | $\beta_2$ | 0.008 | 0.365 | -->
-<!-- | $\gamma$ | 0.003 | 0.226 | -->
-<!-- | $\sigma$ | 0.005 | 0.182 | -->
-<!-- | $\tau$ | $\pm\{1,2\}$ | 0.000 | -->
 
-<!-- | $\beta_1$ | $\beta_2$ | $\gamma$ | $\sigma$ | $\tau$ | -->
-<!-- |---:|---:|---:|---:|:---| -->
-<!-- | $\sim 150$ | $\sim 100$ | $\sim 120$ | $\sim 1200$ | 0 (point mass) | -->
-
-::: columns
-::: {.column width="50%"}
 - **Acceptance:**
   - Continuous parameters mix well
   - $\tau$: zero acceptance due to strong identifiability
@@ -474,23 +461,25 @@ $$
   - $\sigma$: high → efficient mixing  
   - $\beta_1, \beta_2, \gamma$: moderate → slower mixing  
 
-:::
+
+<!-- **Overall:**Model converges well; strong identifiability fixes $\tau$, while parameter dependence slows mixing. -->
+
+**Remove 27 and add the plots**[Added plots]
+
+## SIR MCMC Diagnostics: Trace and ACF
+
+:::: {.columns}
 ::: {.column width="50%"}
-
-- **Trace plots:**
-  - Stable, no drift → convergence achieved  
-
-- **ACF:**
-  - $\sigma$: fast decay  
-  - $\beta_1, \beta_2, \gamma$: slow decay reflecting dependence due to shared ODE structure
-
-:::
+![Trace plots after burn-in.](trace-2.png){width="100%"}
 :::
 
+::: {.column width="50%"}
+![ACF plots after thinning.](ACF-2.png){width="100%"}
 
-**Overall:**Model converges well; strong identifiability fixes $\tau$, while parameter dependence slows mixing.
+:::
+::::
 
-**Remove 27 and add the plots**
+
 
 ## Posterior Summary: SIR Model
 
