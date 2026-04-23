@@ -62,12 +62,12 @@ format:
 
 **Baseline model (no change-point)**
 
+::: columns
+::: {.column width="70%"}
+
 $$
 y_i = f(t_i;\theta) + \varepsilon_i, \qquad \varepsilon_i \sim N(0,\sigma^2)
 $$
-
-::: columns
-::: {.column width="70%"}
 
 with mean function
 
@@ -94,11 +94,11 @@ $$
 
 ## Logistic Change-Point Model
 
-- Real systems may experience a shift in growth behavior over time.
-- Introduce a change-point $\tau$ so the growth rate changes at an unknown time.
-
 ::: columns
 ::: {.column width="55%"}
+
+- Real systems may experience a shift in growth behavior over time.
+- Introduce a change-point $\tau$ so the growth rate changes at an unknown time.
 
 $$
 f(t_i;\theta)=
@@ -125,8 +125,6 @@ $$
 :::
 :::
 
-**merge slides 8 and 9**[Fixed]
-
 
 ## Frequentist Estimation: Logistic Model
 
@@ -146,7 +144,6 @@ $$
 - 100 simulation replications  
 - Evaluation: bias, RMSE, change-point accuracy, AIC selection
 
-**Combine 10 & 11 and remove procedure[Fixed!], change the heading**
 
 ## Logistic Simulation Study
 
@@ -234,16 +231,6 @@ $$
   - High ESS for $\sigma$ and $\tau$ indicates efficient sampling 
   - Lower ESS for $K, r_1, r_2, t_0$ due to parameter dependence
 
-- Trace Plots:
-  - Chains are stationary (no drift) 
-  - Continuous parameters exhibit “fuzzy caterpillar” behavior → good mixing 
-  - $\tau$ concentrated near 30–31 → strong identifiability 
-
-- ACF:
-  - $\sigma$ and $\tau$: fast decay → low autocorrelation 
-  - $K$, $r_1$, $r_2$, and $t_0$ → persistent dependence
-
-
 ## Logistic MCMC Diagnostics: Trace and ACF
 
 :::: {.columns}
@@ -256,7 +243,7 @@ $$
 :::
 ::::
 
-**remove slide 15 and just keep the plots** - In slide 15 should we keep acceptance rate and ESS part, only remove trace and ACF??
+**remove slide 15 and just keep the plots** - In slide 15 should we keep acceptance rate and ESS part, only remove trace and ACF?? Yes!
 
 
 ## Posterior Summary: Logistic Model
@@ -293,23 +280,38 @@ $$
 
 # SIR Model
 
-## SIR Model
+::: {.columns}
 
-- Logistic growth captures overall epidemic patterns, but not transmission mechanisms.
-- We extend the analysis to the **SIR model**:
-  - $S$: susceptible
-  - $I$: infected
-  - $R$: recovered
-- Key advantage:
-  - mechanistic description of disease spread
-- Main challenge:
-  - no closed-form solution
-  - must solve an ODE system numerically
+::: {.column width="40%"}
 
-## SIR Change-Point Model
+**SIR Model**
 
-- Introduce a change-point in the transmission rate:
+- Logistic growth captures trends but not mechanisms  
+- Use **SIR model**:
 
+  - $S$: susceptible  
+  - $I$: infected  
+  - $R$: recovered  
+
+**Advantages**
+
+- Mechanistic description of transmission  
+
+**Challenges**
+
+- No closed-form solution  
+- Requires numerical ODE solving  
+
+
+:::
+
+::: {.column width="60%"}
+
+**Change-Point Extension**
+
+- Transmission rate changes at $\tau$:
+
+\vspace{-8pt}
 $$
 \beta(t)=
 \begin{cases}
@@ -320,46 +322,75 @@ $$
 
 - Observation model:
 
+\vspace{-8pt}
 $$
 y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 $$
 
-- The SIR dynamics are governed by differential equations and solved numerically at each evaluation.
-- This allows the model to capture interventions or behavioral changes.
+- Captures interventions or behavioral shifts  
 
+:::
 
-** Combine 20 and 21**
-## Frequentist Estimation: SIR Model
+:::
 
-- Parameters estimated by MLE
-- Equivalent to minimizing the negative log-likelihood
-- For a fixed candidate $\tau$:
-  - estimate $\beta_1, \beta_2, \gamma, \sigma$ using `optim()` with `L-BFGS-B`
-  - solve the ODE system numerically at each likelihood evaluation
-- Estimate $\tau$ by grid search over candidate values
-- Select the value of $\tau$ that minimizes the negative log-likelihood
+## SIR Estimation & Simulation
 
-## SIR Simulation Study
+::: {.columns}
 
-- Time points: $t = 0,\dots,60$
-- True parameters:
-  - $\beta_1 = 0.40$
-  - $\beta_2 = 0.15$
-  - $\gamma = 0.10$
-  - $\tau = 20$
-- Initial conditions:
-  - $S(0) = 0.999$
-  - $I(0) = 0.001$
-  - $R(0) = 0$
-- Gaussian noise with $\sigma = 0.01$
-- Repeat over 100 simulated datasets
-- Metrics:
-  - bias
-  - RMSE
-  - change-point accuracy
+::: {.column width="45%"}
 
+**Frequentist Estimation**
 
-**Combine 22 and 23**
+- Parameters via **MLE**  
+- Minimize negative log-likelihood  
+
+**For fixed $\tau$**
+
+- Estimate $\beta_1, \beta_2, \gamma, \sigma$  
+- `optim()` (`L-BFGS-B`)  
+- Solve ODE each evaluation  
+
+**Change-point**
+
+- Grid search over $\tau$  
+- Select min NLL  
+
+:::
+
+::: {.column width="35%"}
+
+**Simulation Study**
+
+- $t = 0,\dots,60$  
+
+**True parameters**
+
+- $\beta_1 = 0.40$  
+- $\beta_2 = 0.15$  
+- $\gamma = 0.10$  
+- $\tau = 20$  
+
+**Initial conditions**
+
+- $S(0) = 0.999$  
+- $I(0) = 0.001$  
+- $R(0) = 0$  
+
+- $\sigma = 0.01$  
+
+:::
+
+::: {.column width="20%"}
+
+**Metrics**
+
+- Bias  
+- RMSE  
+- Change-point accuracy  
+
+:::
+
+:::
 
 ## SIR Simulation Results
 
@@ -504,62 +535,38 @@ $$
 - Slight differences reflect stronger posterior dependence in the SIR model
 - Both methods support the same qualitative conclusions
 
-## Computational Considerations
+## Runtime & Numerical Stability
 
 **Logistic model**
 
-- closed-form mean function
-- fast likelihood evaluation
-- efficient profile search
+- Closed-form mean → fast likelihood  
+- Smooth surface → stable optimization  
 
 **SIR model**
 
-- requires numerical ODE solution at each evaluation
-- much slower profile likelihood and MCMC
-- repeated ODE solves dominate runtime
+- Requires ODE solve at each evaluation  
+- Much slower likelihood and MCMC  
+- Numerical stability requires safeguards  
 
-**Implication:** model realism improves, but computational cost increases sharply.
+**Takeaway:** Increased model realism comes with a substantial computational cost.
 
-## Numerical Stability and Initialization
-
-**Logistic model**
-
-- stable optimization across simulations
-- smooth likelihood surface
-- reliable convergence with `L-BFGS-B`
-
-**SIR model**
-
-- requires ODE solver safeguards
-- occasional instability for extreme parameter values
-- stability improves with safe evaluation wrappers
+## Sensitivity & Identifiability
 
 **Initialization**
 
-- MLE estimates used as starting values for MCMC
-- low sensitivity for logistic model
-- stronger sensitivity for SIR model
-- MLE initialization improves convergence and reduces burn-in
+- MLE used to initialize MCMC  
+- Logistic: low sensitivity  
+- SIR: higher sensitivity  
+- Good initialization reduces burn-in  
 
-## Change-Point Identifiability
+**Change-point behavior**
 
-**Logistic model**
+- Logistic: $\tau$ varies → moderate uncertainty  
+- SIR: $\tau$ fixed → strong identifiability  
 
-- $\tau$ moves between nearby values 30 and 31
-- indicates moderate uncertainty
+**Implication:** Mechanistic models improve change-point detection but increase computational burden.
 
-**SIR model**
-
-- $\tau$ remains fixed at 20
-- indicates extreme identifiability
-
-**Interpretation**
-
-- the SIR likelihood is much more sensitive to the change-point
-- incorrect values are strongly penalized
-- more mechanistic models can produce stronger change-point detectability
-
-**Read 31,32,33 and change it accordingly**
+**Read 31,32,33 and change it accordingly[FIXED]**
 
 # Summary
 
