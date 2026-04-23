@@ -430,11 +430,31 @@ Computational and Inferential Consequences}
 y_i = f(t_i;\theta) + \varepsilon_i, \qquad \varepsilon_i \sim N(0,\sigma^2)
 \]
 
+\begin{columns}[T]
+\begin{column}{0.7\textwidth}
 with mean function
 
 \[
 f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
 \]
+\end{column}
+
+\begin{column}{0.3\textwidth}
+\textbf{Parameters:}
+
+\begin{itemize}
+\tightlist
+\item
+  \(K\): carrying capacity
+\item
+  \(t_0\): inflection point
+\item
+  \(r\): growth rate
+\item
+  \(\sigma^2\): error variance
+\end{itemize}
+\end{column}
+\end{columns}
 
 \begin{itemize}
 \tightlist
@@ -455,6 +475,8 @@ f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
   unknown time.
 \end{itemize}
 
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
 \[
 f(t_i;\theta)=
 \begin{cases}
@@ -470,26 +492,9 @@ f(t_i;\theta)=
 \item
   After \(\tau\): growth rate \(r_2\)
 \end{itemize}
-\end{frame}
+\end{column}
 
-\begin{frame}{Parameters and Assumptions}
-\phantomsection\label{parameters-and-assumptions}
-\textbf{Parameters}
-
-\begin{itemize}
-\tightlist
-\item
-  \(K\): carrying capacity
-\item
-  \(t_0\): inflection point
-\item
-  \(r_1, r_2\): growth rates
-\item
-  \(\tau\): change-point
-\item
-  \(\sigma^2\): error variance
-\end{itemize}
-
+\begin{column}{0.45\textwidth}
 \textbf{Assumptions}
 
 \begin{itemize}
@@ -505,6 +510,10 @@ f(t_i;\theta)=
 \item
   The change is large enough for identifiability.
 \end{itemize}
+\end{column}
+\end{columns}
+
+\textbf{merge slides 8 and 9}{[}Fixed{]}
 \end{frame}
 
 \begin{frame}[fragile]{Frequentist Estimation: Logistic Model}
@@ -512,98 +521,48 @@ f(t_i;\theta)=
 \begin{itemize}
 \tightlist
 \item
-  Parameters estimated using \textbf{maximum likelihood estimation
-  (MLE)}.
+  Parameters estimated via \textbf{MLE}
 \item
-  Under Gaussian errors, this is equivalent to minimizing the negative
-  log-likelihood.
+  Optimization using \texttt{optim()} (L-BFGS-B)
 \item
-  Optimization in R:
-
-  \begin{itemize}
-  \tightlist
-  \item
-    \texttt{optim()}
-  \item
-    \texttt{L-BFGS-B} algorithm
-  \end{itemize}
-\item
-  No change-point model:
-
-  \begin{itemize}
-  \tightlist
-  \item
-    directly estimate \((K, r, t_0, \sigma)\)
-  \end{itemize}
+  No change-point model: directly estimate \((K, r, t_0, \sigma)\)
 \item
   Change-point model:
 
   \begin{itemize}
   \tightlist
   \item
-    treat \(\tau\) as discrete
+    \(\tau\) treated as discrete
   \item
-    use a grid search over candidate values of \(\tau\)
+    grid search over \(\tau\)
   \item
-    for each candidate, optimize the remaining parameters
-  \item
-    choose the value of \(\tau\) minimizing the negative log-likelihood
+    optimize remaining parameters for each \(\tau\)
   \end{itemize}
 \item
-  Model comparison is based on AIC.
+  Model comparison via \textbf{AIC}
 \end{itemize}
+
+\textbf{Simulation Study}
+
+\begin{itemize}
+\tightlist
+\item
+  Data generated with true change-point
+\item
+  Setup: \(n=60\), \(K=100\), \(t_0=25\), \(r_1=0.22\), \(r_2=0.06\),
+  \(\tau=30\)
+\item
+  100 simulation replications\\
+\item
+  Evaluation: bias, RMSE, change-point accuracy, AIC selection
+\end{itemize}
+
+\textbf{Combine 10 \& 11 and remove procedure{[}Fixed!{]}, change the
+heading}
 \end{frame}
 
 \begin{frame}{Logistic Simulation Study}
 \phantomsection\label{logistic-simulation-study}
-\begin{itemize}
-\tightlist
-\item
-  Data generated from a logistic model with a true change-point
-\item
-  Setup:
-
-  \begin{itemize}
-  \tightlist
-  \item
-    sample size \(n = 60\)
-  \item
-    true parameters:
-
-    \begin{itemize}
-    \tightlist
-    \item
-      \(K = 100\)
-    \item
-      \(t_0 = 25\)
-    \item
-      \(r_1 = 0.22\)
-    \item
-      \(r_2 = 0.06\)
-    \item
-      \(\tau = 30\)
-    \end{itemize}
-  \end{itemize}
-\item
-  Procedure:
-
-  \begin{itemize}
-  \tightlist
-  \item
-    simulate dataset
-  \item
-    fit both no-change and change-point models
-  \item
-    repeat for 100 replications
-  \end{itemize}
-\item
-  Metrics:bias, RMSE, change-point detection accuracy, AIC-based model
-  selection
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Logistic Simulation Study}
-\phantomsection\label{logistic-simulation-study-1}
 \begin{columns}[T]
 \begin{column}{0.5\textwidth}
 \textbf{Results}
@@ -805,6 +764,9 @@ Parameter & 95\% CI \\
 \end{figure}%
 \end{column}
 \end{columns}
+
+\textbf{remove slide 15 and just keep the plots} - In slide 15 should we
+keep acceptance rate and ESS part, only remove trace and ACF??
 \end{frame}
 
 \begin{frame}{Posterior Summary: Logistic Model}
@@ -916,7 +878,7 @@ credible intervals.}
 \end{itemize}
 \end{frame}
 
-\begin{frame}{SIR Change-Point Model}
+\begin{frame}[fragile]{SIR Change-Point Model}
 \phantomsection\label{sir-change-point-model}
 \begin{itemize}
 \tightlist
@@ -950,10 +912,9 @@ y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 \item
   This allows the model to capture interventions or behavioral changes.
 \end{itemize}
-\end{frame}
 
-\begin{frame}[fragile]{Frequentist Estimation: SIR Model}
-\phantomsection\label{frequentist-estimation-sir-model}
+** Combine 20 and 21** \#\# Frequentist Estimation: SIR Model
+
 \begin{itemize}
 \tightlist
 \item
@@ -1028,6 +989,8 @@ y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
     change-point accuracy
   \end{itemize}
 \end{itemize}
+
+\textbf{Combine 22 and 23}
 \end{frame}
 
 \begin{frame}{SIR Simulation Results}
@@ -1199,7 +1162,7 @@ Parameter & Lower & Upper \\
 \textbf{Overall:}Model converges well; strong identifiability fixes
 \(\tau\), while parameter dependence slows mixing.
 
-\textbf{Are we including plots here}
+\textbf{Remove 27 and add the plots}
 \end{frame}
 
 \begin{frame}{Posterior Summary: SIR Model}
@@ -1395,9 +1358,11 @@ increases sharply.
   more mechanistic models can produce stronger change-point
   detectability
 \end{itemize}
+
+\textbf{Read 31,32,33 and change it accordingly}
 \end{frame}
 
-\section{Summarry}\label{summarry}
+\section{Summary}\label{summary}
 
 \begin{frame}{Practical Recommendations}
 \phantomsection\label{practical-recommendations}

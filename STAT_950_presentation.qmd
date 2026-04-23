@@ -66,11 +66,29 @@ $$
 y_i = f(t_i;\theta) + \varepsilon_i, \qquad \varepsilon_i \sim N(0,\sigma^2)
 $$
 
+::: columns
+::: {.column width="70%"}
+
 with mean function
 
 $$
 f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
 $$
+
+:::
+::: {.column width="30%"}
+
+
+**Parameters:**
+
+- $K$: carrying capacity
+- $t_0$: inflection point
+- $r$: growth rate
+- $\sigma^2$: error variance
+
+:::
+:::
+
 
 - Growth starts slowly, increases rapidly, and then levels off at a maximum.
 
@@ -78,6 +96,9 @@ $$
 
 - Real systems may experience a shift in growth behavior over time.
 - Introduce a change-point $\tau$ so the growth rate changes at an unknown time.
+
+::: columns
+::: {.column width="55%"}
 
 $$
 f(t_i;\theta)=
@@ -90,16 +111,8 @@ $$
 - Before $\tau$: growth rate $r_1$
 - After $\tau$: growth rate $r_2$
 
-**merge slides 8 and 9**
-## Parameters and Assumptions
-
-**Parameters**
-
-- $K$: carrying capacity
-- $t_0$: inflection point
-- $r_1, r_2$: growth rates
-- $\tau$: change-point
-- $\sigma^2$: error variance
+::: 
+::: {.column width="45%"}
 
 **Assumptions**
 
@@ -109,40 +122,31 @@ $$
 - Errors are independent with constant variance.
 - The change is large enough for identifiability.
 
+:::
+:::
+
+**merge slides 8 and 9**[Fixed]
+
+
 ## Frequentist Estimation: Logistic Model
 
-- Parameters estimated using **maximum likelihood estimation (MLE)**.
-- Under Gaussian errors, this is equivalent to minimizing the negative log-likelihood.
-- Optimization in R:
-  - `optim()`
-  - `L-BFGS-B` algorithm
-- No change-point model:
-  - directly estimate $(K, r, t_0, \sigma)$
+- Parameters estimated via **MLE**
+- Optimization using `optim()` (L-BFGS-B)
+- No change-point model: directly estimate $(K, r, t_0, \sigma)$
 - Change-point model:
-  - treat $\tau$ as discrete
-  - use a grid search over candidate values of $\tau$
-  - for each candidate, optimize the remaining parameters
-  - choose the value of $\tau$ minimizing the negative log-likelihood
-- Model comparison is based on AIC.
+  - $\tau$ treated as discrete
+  - grid search over $\tau$
+  - optimize remaining parameters for each $\tau$
+- Model comparison via **AIC**
 
-## Logistic Simulation Study
+**Simulation Study**
 
-- Data generated from a logistic model with a true change-point
-- Setup:
-  - sample size $n = 60$
-  - true parameters:
-    - $K = 100$
-    - $t_0 = 25$
-    - $r_1 = 0.22$
-    - $r_2 = 0.06$
-    - $\tau = 30$
-- Procedure:
-  - simulate dataset
-  - fit both no-change and change-point models
-  - repeat for 100 replications
-- Metrics:bias, RMSE, change-point detection accuracy, AIC-based model selection
+- Data generated with true change-point
+- Setup: $n=60$, $K=100$, $t_0=25$, $r_1=0.22$, $r_2=0.06$, $\tau=30$
+- 100 simulation replications  
+- Evaluation: bias, RMSE, change-point accuracy, AIC selection
 
-**Combine 10 & 11 and remove procedure, change the heading**
+**Combine 10 & 11 and remove procedure[Fixed!], change the heading**
 
 ## Logistic Simulation Study
 
@@ -223,15 +227,6 @@ $$
 
 ## Logistic MCMC Tuning and Diagnostics
 
-<!-- | Parameter | Proposal SD | Acceptance Rate | -->
-<!-- |---|---:|---:| -->
-<!-- | $K$ | 4.0 | 0.213 | -->
-<!-- | $r_1$ | 0.025 | 0.347 | -->
-<!-- | $r_2$ | 0.008 | 0.223 | -->
-<!-- | $t_0$ | 1.0 | 0.200 | -->
-<!-- | $\sigma$ | 0.8 | 0.378 | -->
-<!-- | $\tau$ | $\pm\{1,2\}$ | 0.016 | --> 
-
 - Continuous-parameter acceptance rates fall in the target range.
 - Low acceptance for $\tau$: expected because of strong posterior concentration.
 
@@ -261,7 +256,9 @@ $$
 :::
 ::::
 
-**remove slide 15 and just keep the plots**
+**remove slide 15 and just keep the plots** - In slide 15 should we keep acceptance rate and ESS part, only remove trace and ACF??
+
+
 ## Posterior Summary: Logistic Model
 
 | Parameter | True Value | Post. Mean | Post. Median | 95% CI |
