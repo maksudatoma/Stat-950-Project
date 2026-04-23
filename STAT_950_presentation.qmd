@@ -90,6 +90,7 @@ $$
 - Before $\tau$: growth rate $r_1$
 - After $\tau$: growth rate $r_2$
 
+**merge slides 8 and 9**
 ## Parameters and Assumptions
 
 **Parameters**
@@ -140,6 +141,8 @@ $$
   - fit both no-change and change-point models
   - repeat for 100 replications
 - Metrics:bias, RMSE, change-point detection accuracy, AIC-based model selection
+
+**Combine 10 & 11 and remove procedure, change the heading**
 
 ## Logistic Simulation Study
 
@@ -258,7 +261,7 @@ $$
 :::
 ::::
 
-
+**remove slide 15 and just keep the plots**
 ## Posterior Summary: Logistic Model
 
 | Parameter | True Value | Post. Mean | Post. Median | 95% CI |
@@ -327,6 +330,8 @@ $$
 - The SIR dynamics are governed by differential equations and solved numerically at each evaluation.
 - This allows the model to capture interventions or behavioral changes.
 
+
+** Combine 20 and 21**
 ## Frequentist Estimation: SIR Model
 
 - Parameters estimated by MLE
@@ -355,6 +360,9 @@ $$
   - bias
   - RMSE
   - change-point accuracy
+
+
+**Combine 22 and 23**
 
 ## SIR Simulation Results
 
@@ -454,7 +462,7 @@ $$
 
 **Overall:**Model converges well; strong identifiability fixes $\tau$, while parameter dependence slows mixing.
 
-**Are we including plots here**
+**Remove 27 and add the plots**
 
 ## Posterior Summary: SIR Model
 
@@ -554,7 +562,9 @@ $$
 - incorrect values are strongly penalized
 - more mechanistic models can produce stronger change-point detectability
 
-# Summarry
+**Read 31,32,33 and change it accordingly**
+
+# Summary
 
 ## Practical Recommendations
 
