@@ -279,7 +279,7 @@ $$
 - $K$ has the largest uncertainty.
 - Overall, the two methods lead to consistent inferential conclusions.
 
-**plot and the description do not match- need to check in the report also(2.3.2), added the slide below **
+**plot and the description do not match- need to check in the report also(2.3.2),added the slide below **
 
 :::
 :::
@@ -349,6 +349,7 @@ $$
 $$
 y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 $$
+with piecewise system of differential equations.
 
 - Captures interventions or behavioral shifts  
 
@@ -455,7 +456,8 @@ $$
 
 - All true values lie within the confidence intervals
 - $\tau$ is estimated with good precision
-- $\beta_2$ shows the widest uncertainty
+- Slightly wider interval for $\beta_2$ reflects post-change uncertainty
+
 
 :::
 :::
@@ -606,9 +608,8 @@ $$
   - computationally intensive
   - yields stronger change-point identifiability
 - Frequentist and Bayesian methods agree strongly in the logistic model and remain broadly consistent in the SIR model.
-- Main conclusion:
-  - model structure strongly affects identifiability, computational cost, and uncertainty quantification
-
+- Main conclusion:model structure strongly affects identifiability, computational cost, and uncertainty quantification
+**shall we add future directions also (shortly)**
 
 ## Thank you
 
