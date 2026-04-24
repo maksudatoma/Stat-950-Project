@@ -205,13 +205,15 @@ $$
 - $r_1$ estimated more precisely than $r_2$
 - Overall: bootstrap confirms stable and reliable frequentist inference
 
+**$r_1$ estimated more precisely than $r_2$ - is this correct?? (intervals are kind of similar)**
 :::
 :::
+
 
 ## Bayesian Approach: Logistic Model
 
 - Captures joint uncertainty across all parameters and avoids reliance on asymptotic approximations
-- Weakly informative priors chosen to match MLE bounds
+- Weakly informative uniform priors chosen to match MLE bounds
 - With $n = 60$, the likelihood dominates the priors
 
 **MCMC setup**
@@ -272,12 +274,32 @@ $$
 ::: {.column width="45%"}
 - Close agreement for all continuous parameters.
 - $\tau$ is estimated precisely by both methods:
-  - bootstrap $(28,31)$
+  - bootstrap $(28.98,31)$
   - Bayesian $(30,31)$
 - $K$ has the largest uncertainty.
-- $r_1$ is estimated more precisely than $r_2$.
+- Overall, the two methods lead to consistent inferential conclusions.
+
+**plot and the description do not match- need to check in the report also(2.3.2), added the slide below **
+
 :::
 :::
+
+## Bootstrap vs Bayesian: Logistic Model
+
+| Parameter | Bootstrap CI | Bayesian CI |
+|---|---|---|
+| $\tau$ | $(28.98, 31)$ | $(30,31)$ |
+| $K$ | $(92.18, 115.87)$ | $(93.05, 115.39)$ |
+| $r_1$ | $(0.187, 0.240)$ | $(0.191,0.253)$ |
+| $r_2$ | $(0.035, 0.083)$ | $(0.037, 0.077)$ |
+| $t_0$ | $(24.46, 26.90)$ | $(24.57, 26.88)$ |
+| $\sigma$ | $(2.29, 3.44)$ | $(2.490, 3.648)$ |
+
+- Close agreement for all continuous parameters.
+- $\tau$ is estimated precisely by both methods.
+- $K$ has the largest uncertainty.
+- Overall, the two methods lead to consistent inferential conclusions.
+
 
 # SIR Model
 

@@ -1,5 +1,4 @@
 % Options for packages loaded elsewhere
-% Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
 %
@@ -7,13 +6,14 @@
   ignorenonframetext,
   aspectratio=169,
 ]{beamer}
-\newif\ifbibliography
 \usepackage{pgfpages}
 \setbeamertemplate{caption}[numbered]
 \setbeamertemplate{caption label separator}{: }
 \setbeamercolor{caption name}{fg=normal text.fg}
 \beamertemplatenavigationsymbolsempty
-% remove section numbering
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
 \setbeamertemplate{part page}{
   \centering
   \begin{beamercolorbox}[sep=16pt,center]{part title}
@@ -22,19 +22,16 @@
 }
 \setbeamertemplate{section page}{
   \centering
-  \begin{beamercolorbox}[sep=12pt,center]{section title}
+  \begin{beamercolorbox}[sep=12pt,center]{part title}
     \usebeamerfont{section title}\insertsection\par
   \end{beamercolorbox}
 }
 \setbeamertemplate{subsection page}{
   \centering
-  \begin{beamercolorbox}[sep=8pt,center]{subsection title}
+  \begin{beamercolorbox}[sep=8pt,center]{part title}
     \usebeamerfont{subsection title}\insertsubsection\par
   \end{beamercolorbox}
 }
-% Prevent slide breaks in the middle of a paragraph
-\widowpenalties 1 10000
-\raggedbottom
 \AtBeginPart{
   \frame{\partpage}
 }
@@ -47,20 +44,21 @@
 \AtBeginSubsection{
   \frame{\subsectionpage}
 }
+
+\usepackage{amsmath,amssymb}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
   \usepackage{textcomp} % provide euro and other symbols
 \else % if luatex or xetex
-  \usepackage{unicode-math} % this also loads fontspec
+  \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
 \fi
 \usepackage{lmodern}
-
-\ifPDFTeX\else
-  % xetex/luatex font selection
+\ifPDFTeX\else  
+    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -78,10 +76,14 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
+\usepackage{xcolor}
+\newif\ifbibliography
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 
 
-\usepackage{longtable,booktabs,array}
-\newcounter{none} % for unnumbered tables
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
 \usepackage{calc} % for calculating minipage widths
 \usepackage{caption}
 % Make caption package work with longtable
@@ -90,33 +92,17 @@
 \makeatother
 \usepackage{graphicx}
 \makeatletter
-\newsavebox\pandoc@box
-\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
-  \sbox\pandoc@box{#1}%
-  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
-  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
-  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
-  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
-  \else\usebox{\pandoc@box}%
-  \fi%
-}
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
 % Set default figure placement to htbp
+\makeatletter
 \def\fps@figure{htbp}
 \makeatother
-
-
-
-
-
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-
-
-
- 
-
 
 % ============================================================
 %  UNL Combined Style
@@ -300,9 +286,13 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
 \usepackage{bookmark}
+
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same}
+\urlstyle{same} % disable monospaced font for URLs
 \hypersetup{
   pdftitle={Change-Point Detection in Logistic and Epidemic Models: Computational and Inferential Consequences},
   pdfauthor={Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam},
@@ -310,10 +300,9 @@
   pdfcreator={LaTeX via pandoc}}
 
 
-\title[Computational Statistics]{\texorpdfstring{Change-Point Detection
-in Logistic and Epidemic Models: Computational and Inferential
-Consequences}{Change-Point Detection in Logistic and Epidemic Models: Computational and Inferential Consequences}}
-\author[UNL]{Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam}
+\title{Change-Point Detection in Logistic and Epidemic Models:
+Computational and Inferential Consequences}
+\author{Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam}
 \date{}
 \institute{Department of Statistics, University of Nebraska--Lincoln}
 
@@ -322,7 +311,7 @@ Consequences}{Change-Point Detection in Logistic and Epidemic Models: Computatio
 
 
 \begin{frame}{Content}
-\protect\phantomsection\label{content}
+\phantomsection\label{content}
 \begin{itemize}
 \tightlist
 \item
@@ -347,7 +336,7 @@ Consequences}{Change-Point Detection in Logistic and Epidemic Models: Computatio
 \section{Introduction}\label{introduction}
 
 \begin{frame}{Introduction}
-\protect\phantomsection\label{introduction-1}
+\phantomsection\label{introduction-1}
 \begin{itemize}
 \tightlist
 \item
@@ -386,7 +375,7 @@ Consequences}{Change-Point Detection in Logistic and Epidemic Models: Computatio
 \end{frame}
 
 \begin{frame}{Motivation and Objective}
-\protect\phantomsection\label{motivation-and-objective}
+\phantomsection\label{motivation-and-objective}
 \begin{itemize}
 \tightlist
 \item
@@ -434,11 +423,11 @@ Consequences}{Change-Point Detection in Logistic and Epidemic Models: Computatio
 \section{Logistic Growth Model}\label{logistic-growth-model}
 
 \begin{frame}{Logistic Growth Model}
-\protect\phantomsection\label{logistic-growth-model-1}
+\phantomsection\label{logistic-growth-model-1}
 \textbf{Baseline model (no change-point)}
 
 \begin{columns}[T]
-\begin{column}{0.7\linewidth}
+\begin{column}{0.7\textwidth}
 \[
 y_i = f(t_i;\theta) + \varepsilon_i, \qquad \varepsilon_i \sim N(0,\sigma^2)
 \]
@@ -457,7 +446,7 @@ f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
 \end{itemize}
 \end{column}
 
-\begin{column}{0.3\linewidth}
+\begin{column}{0.3\textwidth}
 \textbf{Parameters:}
 
 \begin{itemize}
@@ -476,9 +465,9 @@ f(t_i;\theta) = \frac{K}{1 + \exp\{-r(t_i - t_0)\}}.
 \end{frame}
 
 \begin{frame}{Logistic Change-Point Model}
-\protect\phantomsection\label{logistic-change-point-model}
+\phantomsection\label{logistic-change-point-model}
 \begin{columns}[T]
-\begin{column}{0.55\linewidth}
+\begin{column}{0.55\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -505,7 +494,7 @@ f(t_i;\theta)=
 \end{itemize}
 \end{column}
 
-\begin{column}{0.45\linewidth}
+\begin{column}{0.45\textwidth}
 \textbf{Assumptions}
 
 \begin{itemize}
@@ -526,7 +515,7 @@ f(t_i;\theta)=
 \end{frame}
 
 \begin{frame}[fragile]{Frequentist Estimation: Logistic Model}
-\protect\phantomsection\label{frequentist-estimation-logistic-model}
+\phantomsection\label{frequentist-estimation-logistic-model}
 \begin{itemize}
 \tightlist
 \item
@@ -568,12 +557,11 @@ f(t_i;\theta)=
 \end{frame}
 
 \begin{frame}{Logistic Simulation Study}
-\protect\phantomsection\label{logistic-simulation-study}
+\phantomsection\label{logistic-simulation-study}
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \textbf{Results}
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lrrr@{}}
 \toprule\noalign{}
 Parameter & True & Estimate & RMSE \\
@@ -586,10 +574,9 @@ Parameter & True & Estimate & RMSE \\
 \(\tau\) & 30 & 29.93 & 0.52 \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \textbf{Key Insights}
 
 \begin{itemize}
@@ -615,7 +602,7 @@ Parameter & True & Estimate & RMSE \\
 \end{frame}
 
 \begin{frame}{Parametric Bootstrap: Logistic Model}
-\protect\phantomsection\label{parametric-bootstrap-logistic-model}
+\phantomsection\label{parametric-bootstrap-logistic-model}
 \begin{itemize}
 \tightlist
 \item
@@ -627,10 +614,9 @@ Parameter & True & Estimate & RMSE \\
 \end{itemize}
 
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \vspace{-10pt}
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}ll@{}}
 \toprule\noalign{}
 Parameter & 95\% CI \\
@@ -644,10 +630,9 @@ Parameter & 95\% CI \\
 \(\sigma\) & \((2.29, 3.44)\) \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -659,19 +644,22 @@ Parameter & 95\% CI \\
 \item
   Overall: bootstrap confirms stable and reliable frequentist inference
 \end{itemize}
+
+\textbf{\(r_1\) estimated more precisely than \(r_2\) - is this
+correct?? (intervals are kind of similar)}
 \end{column}
 \end{columns}
 \end{frame}
 
 \begin{frame}{Bayesian Approach: Logistic Model}
-\protect\phantomsection\label{bayesian-approach-logistic-model}
+\phantomsection\label{bayesian-approach-logistic-model}
 \begin{itemize}
 \tightlist
 \item
   Captures joint uncertainty across all parameters and avoids reliance
   on asymptotic approximations
 \item
-  Weakly informative priors chosen to match MLE bounds
+  Weakly informative uniform priors chosen to match MLE bounds
 \item
   With \(n = 60\), the likelihood dominates the priors
 \end{itemize}
@@ -700,7 +688,7 @@ Parameter & 95\% CI \\
 \end{frame}
 
 \begin{frame}{Logistic MCMC Tuning and Diagnostics}
-\protect\phantomsection\label{logistic-mcmc-tuning-and-diagnostics}
+\phantomsection\label{logistic-mcmc-tuning-and-diagnostics}
 \begin{itemize}
 \item
   Continuous-parameter acceptance rates fall in the target range.
@@ -721,12 +709,12 @@ Parameter & 95\% CI \\
 \end{frame}
 
 \begin{frame}{Logistic MCMC Diagnostics: Trace and ACF}
-\protect\phantomsection\label{logistic-mcmc-diagnostics-trace-and-acf}
+\phantomsection\label{logistic-mcmc-diagnostics-trace-and-acf}
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{trace.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{trace.png}
 
 }
 
@@ -735,10 +723,10 @@ Parameter & 95\% CI \\
 \end{figure}%
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{ACF.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{ACF.png}
 
 }
 
@@ -750,8 +738,7 @@ Parameter & 95\% CI \\
 \end{frame}
 
 \begin{frame}{Posterior Summary: Logistic Model}
-\protect\phantomsection\label{posterior-summary-logistic-model}
-{\def\LTcaptype{none} % do not increment counter
+\phantomsection\label{posterior-summary-logistic-model}
 \begin{longtable}[]{@{}lrrrl@{}}
 \toprule\noalign{}
 Parameter & True Value & Post. Mean & Post. Median & 95\% CI \\
@@ -765,7 +752,6 @@ Parameter & True Value & Post. Mean & Post. Median & 95\% CI \\
 \(\sigma\) & 3.000 & 3.024 & 2.999 & \((2.490, 3.648)\) \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 
 \begin{itemize}
 \tightlist
@@ -779,12 +765,12 @@ Parameter & True Value & Post. Mean & Post. Median & 95\% CI \\
 \end{frame}
 
 \begin{frame}{Bootstrap vs Bayesian: Logistic Model}
-\protect\phantomsection\label{bootstrap-vs-bayesian-logistic-model}
+\phantomsection\label{bootstrap-vs-bayesian-logistic-model}
 \begin{columns}[T]
-\begin{column}{0.55\linewidth}
+\begin{column}{0.55\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{ci.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{ci.png}
 
 }
 
@@ -794,7 +780,7 @@ credible intervals.}
 \end{figure}%
 \end{column}
 
-\begin{column}{0.45\linewidth}
+\begin{column}{0.45\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -805,24 +791,56 @@ credible intervals.}
   \begin{itemize}
   \tightlist
   \item
-    bootstrap \((28,31)\)
+    bootstrap \((28.98,31)\)
   \item
     Bayesian \((30,31)\)
   \end{itemize}
 \item
   \(K\) has the largest uncertainty.
 \item
-  \(r_1\) is estimated more precisely than \(r_2\).
+  Overall, the two methods lead to consistent inferential conclusions.
 \end{itemize}
+
+\textbf{plot and the description do not match- need to check in the
+report also(2.3.2), added the slide below }
 \end{column}
 \end{columns}
+\end{frame}
+
+\begin{frame}{Bootstrap vs Bayesian: Logistic Model}
+\phantomsection\label{bootstrap-vs-bayesian-logistic-model-1}
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Parameter & Bootstrap CI & Bayesian CI \\
+\midrule\noalign{}
+\endhead
+\(\tau\) & \((28.98, 31)\) & \((30,31)\) \\
+\(K\) & \((92.18, 115.87)\) & \((93.05, 115.39)\) \\
+\(r_1\) & \((0.187, 0.240)\) & \((0.191,0.253)\) \\
+\(r_2\) & \((0.035, 0.083)\) & \((0.037, 0.077)\) \\
+\(t_0\) & \((24.46, 26.90)\) & \((24.57, 26.88)\) \\
+\(\sigma\) & \((2.29, 3.44)\) & \((2.490, 3.648)\) \\
+\bottomrule\noalign{}
+\end{longtable}
+
+\begin{itemize}
+\tightlist
+\item
+  Close agreement for all continuous parameters.
+\item
+  \(\tau\) is estimated precisely by both methods.
+\item
+  \(K\) has the largest uncertainty.
+\item
+  Overall, the two methods lead to consistent inferential conclusions.
+\end{itemize}
 \end{frame}
 
 \section{SIR Model}\label{sir-model}
 
 \begin{frame}{SIR Model}
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \textbf{SIR Model}
 
 \begin{itemize}
@@ -861,7 +879,7 @@ credible intervals.}
 \end{itemize}
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \textbf{Change-Point Extension}
 
 \begin{itemize}
@@ -902,9 +920,9 @@ y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 \end{frame}
 
 \begin{frame}[fragile]{SIR Estimation \& Simulation}
-\protect\phantomsection\label{sir-estimation-simulation}
+\phantomsection\label{sir-estimation-simulation}
 \begin{columns}[T]
-\begin{column}{0.45\linewidth}
+\begin{column}{0.45\textwidth}
 \textbf{Frequentist Estimation}
 
 \begin{itemize}
@@ -938,7 +956,7 @@ y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 \end{itemize}
 \end{column}
 
-\begin{column}{0.3\linewidth}
+\begin{column}{0.3\textwidth}
 \textbf{Simulation Study}
 
 \begin{itemize}
@@ -975,7 +993,7 @@ y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 \end{itemize}
 \end{column}
 
-\begin{column}{0.25\linewidth}
+\begin{column}{0.25\textwidth}
 \textbf{Metrics}
 
 \begin{itemize}
@@ -992,8 +1010,7 @@ y_t = I(t;\theta) + \varepsilon_t, \qquad \varepsilon_t \sim N(0,\sigma^2)
 \end{frame}
 
 \begin{frame}{SIR Simulation Results}
-\protect\phantomsection\label{sir-simulation-results}
-{\def\LTcaptype{none} % do not increment counter
+\phantomsection\label{sir-simulation-results}
 \begin{longtable}[]{@{}lrrrr@{}}
 \toprule\noalign{}
 Parameter & True & Mean Estimate & Bias & RMSE \\
@@ -1005,7 +1022,6 @@ Parameter & True & Mean Estimate & Bias & RMSE \\
 \(\tau\) & 20.00 & 19.84 & -0.16 & 0.5477 \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 
 \begin{itemize}
 \tightlist
@@ -1022,7 +1038,7 @@ Parameter & True & Mean Estimate & Bias & RMSE \\
 \end{frame}
 
 \begin{frame}{Bootstrap Results: SIR Model}
-\protect\phantomsection\label{bootstrap-results-sir-model}
+\phantomsection\label{bootstrap-results-sir-model}
 \begin{itemize}
 \item
   Bootstrap quantifies uncertainty in the SIR parameters
@@ -1041,10 +1057,9 @@ Parameter & True & Mean Estimate & Bias & RMSE \\
 \end{itemize}
 
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \vspace{-10pt}
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lrr@{}}
 \toprule\noalign{}
 Parameter & Lower & Upper \\
@@ -1056,10 +1071,9 @@ Parameter & Lower & Upper \\
 \(\tau\) & 19.00 & 21.00 \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -1074,7 +1088,7 @@ Parameter & Lower & Upper \\
 \end{frame}
 
 \begin{frame}{Bayesian SIR Model}
-\protect\phantomsection\label{bayesian-sir-model}
+\phantomsection\label{bayesian-sir-model}
 \begin{itemize}
 \tightlist
 \item
@@ -1108,7 +1122,7 @@ Parameter & Lower & Upper \\
 \end{frame}
 
 \begin{frame}{SIR MCMC Tuning and Diagnostics}
-\protect\phantomsection\label{sir-mcmc-tuning-and-diagnostics}
+\phantomsection\label{sir-mcmc-tuning-and-diagnostics}
 \begin{itemize}
 \tightlist
 \item
@@ -1135,12 +1149,12 @@ Parameter & Lower & Upper \\
 \end{frame}
 
 \begin{frame}{SIR MCMC Diagnostics: Trace and ACF}
-\protect\phantomsection\label{sir-mcmc-diagnostics-trace-and-acf}
+\phantomsection\label{sir-mcmc-diagnostics-trace-and-acf}
 \begin{columns}[T]
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{trace-2.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{trace-2.png}
 
 }
 
@@ -1149,10 +1163,10 @@ Parameter & Lower & Upper \\
 \end{figure}%
 \end{column}
 
-\begin{column}{0.5\linewidth}
+\begin{column}{0.5\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{ACF-2.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{ACF-2.png}
 
 }
 
@@ -1164,8 +1178,7 @@ Parameter & Lower & Upper \\
 \end{frame}
 
 \begin{frame}{Posterior Summary: SIR Model}
-\protect\phantomsection\label{posterior-summary-sir-model}
-{\def\LTcaptype{none} % do not increment counter
+\phantomsection\label{posterior-summary-sir-model}
 \begin{longtable}[]{@{}lrrrl@{}}
 \toprule\noalign{}
 Parameter & True & Mean & Median & 95\% CI \\
@@ -1178,7 +1191,6 @@ Parameter & True & Mean & Median & 95\% CI \\
 \(\tau\) & 20 & point mass & & \(\tau=20\) \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 
 \begin{itemize}
 \tightlist
@@ -1194,12 +1206,12 @@ Parameter & True & Mean & Median & 95\% CI \\
 \end{frame}
 
 \begin{frame}{SIR: Posterior Fit and Interpretation}
-\protect\phantomsection\label{sir-posterior-fit-and-interpretation}
+\phantomsection\label{sir-posterior-fit-and-interpretation}
 \begin{columns}[T]
-\begin{column}{0.58\linewidth}
+\begin{column}{0.58\textwidth}
 \begin{figure}[H]
 
-{\centering \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{SIR.png}
+{\centering \includegraphics[width=1\textwidth,height=\textheight]{SIR.png}
 
 }
 
@@ -1208,7 +1220,7 @@ Parameter & True & Mean & Median & 95\% CI \\
 \end{figure}%
 \end{column}
 
-\begin{column}{0.42\linewidth}
+\begin{column}{0.42\textwidth}
 \begin{itemize}
 \tightlist
 \item
@@ -1227,8 +1239,7 @@ Parameter & True & Mean & Median & 95\% CI \\
 \end{frame}
 
 \begin{frame}{Bootstrap vs Bayesian: SIR Model}
-\protect\phantomsection\label{bootstrap-vs-bayesian-sir-model}
-{\def\LTcaptype{none} % do not increment counter
+\phantomsection\label{bootstrap-vs-bayesian-sir-model}
 \begin{longtable}[]{@{}lll@{}}
 \toprule\noalign{}
 Parameter & Bootstrap CI & Bayesian CI \\
@@ -1239,7 +1250,6 @@ Parameter & Bootstrap CI & Bayesian CI \\
 \(\gamma\) & \((0.0866, 0.1110)\) & \((0.0996, 0.1106)\) \\
 \bottomrule\noalign{}
 \end{longtable}
-}
 
 \begin{itemize}
 \tightlist
@@ -1256,7 +1266,7 @@ Parameter & Bootstrap CI & Bayesian CI \\
 \end{frame}
 
 \begin{frame}{Runtime \& Numerical Stability}
-\protect\phantomsection\label{runtime-numerical-stability}
+\phantomsection\label{runtime-numerical-stability}
 \textbf{Logistic model}
 
 \begin{itemize}
@@ -1284,7 +1294,7 @@ computational cost.
 \end{frame}
 
 \begin{frame}{Sensitivity \& Identifiability}
-\protect\phantomsection\label{sensitivity-identifiability}
+\phantomsection\label{sensitivity-identifiability}
 \textbf{Initialization}
 
 \begin{itemize}
@@ -1316,7 +1326,7 @@ but increase computational burden.
 \section{Summary}\label{summary}
 
 \begin{frame}{Practical Recommendations}
-\protect\phantomsection\label{practical-recommendations}
+\phantomsection\label{practical-recommendations}
 \begin{itemize}
 \tightlist
 \item
@@ -1348,7 +1358,7 @@ but increase computational burden.
 \end{frame}
 
 \begin{frame}{Discussion and Conclusion}
-\protect\phantomsection\label{discussion-and-conclusion}
+\phantomsection\label{discussion-and-conclusion}
 \begin{itemize}
 \tightlist
 \item
@@ -1394,7 +1404,7 @@ but increase computational burden.
 \end{frame}
 
 \begin{frame}{Thank you}
-\protect\phantomsection\label{thank-you}
+\phantomsection\label{thank-you}
 \begin{center}
 \Large Thank you\\[0.5em]
 \large Questions?
