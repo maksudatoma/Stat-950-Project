@@ -5,13 +5,15 @@ shortauthor: "UNL"
 author: "Maksuda Toma, Dinuwanthi Liyanage, Ovini Kariyawasam"
 institute: "Department of Statistics, University of Nebraska--Lincoln"
 
-
 format:
   beamer:
     aspectratio: 169
     keep-tex: true
     slide-level: 2
     include-in-header: unl_style.tex
+
+header-includes:
+  - \setbeamerfont{title}{size=\huge,series=\bfseries}
 ---
 
 ## Content
@@ -202,10 +204,8 @@ $$
 
 - $\tau$: narrow CI, centered near the true value
 - $K$: widest interval
-- $r_1$ estimated more precisely than $r_2$
 - Overall: bootstrap confirms stable and reliable frequentist inference
 
-**$r_1$ estimated more precisely than $r_2$ - is this correct?? (intervals are kind of similar)**
 :::
 :::
 
@@ -264,25 +264,6 @@ $$
 - $\tau$ is estimated very precisely.
 - $K$ has the largest uncertainty.
 
-## Bootstrap vs Bayesian: Logistic Model
-
-::: columns
-::: {.column width="55%"}
-![Comparison of bootstrap confidence intervals and Bayesian credible intervals.](ci.png){width="100%"}
-:::
-
-::: {.column width="45%"}
-- Close agreement for all continuous parameters.
-- $\tau$ is estimated precisely by both methods:
-  - bootstrap $(28.98,31)$
-  - Bayesian $(30,31)$
-- $K$ has the largest uncertainty.
-- Overall, the two methods lead to consistent inferential conclusions.
-
-**plot and the description do not match- need to check in the report also(2.3.2),added the slide below **
-
-:::
-:::
 
 ## Bootstrap vs Bayesian: Logistic Model
 
@@ -609,7 +590,7 @@ with piecewise system of differential equations.
   - yields stronger change-point identifiability
 - Frequentist and Bayesian methods agree strongly in the logistic model and remain broadly consistent in the SIR model.
 - Main conclusion:model structure strongly affects identifiability, computational cost, and uncertainty quantification
-**shall we add future directions also (shortly)**
+
 
 ## Thank you
 
